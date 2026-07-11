@@ -1,0 +1,5 @@
+*.ai.md
+_local
+*.local
+task*.md
+.idea
