@@ -18,6 +18,7 @@ const (
 	CodeInvalidAction     Code = "INVALID_ACTION"
 	CodeInvalidTransition Code = "INVALID_TRANSITION"
 	CodeStorageFailure    Code = "STORAGE_FAILURE"
+	CodeInvalidToken      Code = "INVALID_TOKEN"
 )
 
 type Error struct {

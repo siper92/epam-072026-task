@@ -5,7 +5,7 @@ sql:
     queries: "queries"
     gen:
       go:
-        package: "db"
+        package: "data"
         out: "."
         emit_interface: true
         emit_exact_table_names: false
