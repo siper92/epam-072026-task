@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 const gridSize = 3

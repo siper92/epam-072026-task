@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"epam/task/pkg/config"
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/config"
+	"ticTacSolved/task/pkg/errs"
 )
 
 const headerJSON = `{"alg":"HS256","typ":"JWT"}`

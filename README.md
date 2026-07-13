@@ -1,8 +1,10 @@
-# EPAM Tic-Tac-Toe Assessment
+# Tic-Tac-Toe Assessment
 
 This file provides guidance to users and agents when using the project.
 The game focuses on a single game server and multiple clients connection to it
  - distribution or multiple game servers are left for future work - but taken in account while designing the architecture.
+
+AI is used in all steps of this project, my stamp on every step
 
 I have focused on robust usage of tokens, validation and sensible security levels
  - token are used to joining lobbies, 
@@ -14,9 +16,11 @@ Admin role is for token role example:
 
 ## Project
 
-A Tic-Tac-Toe game server (EPAM assessment task). Go module `epam/task`, Go 1.25.
-The implementation is intentionally **standard-library only** — the sole external
-tool is `sqlc`, used at build time for code generation, not as a runtime dependency.
+A Tic-Tac-Toe game server = Go module `ticTacSolved/task`, Go 1.25.
+ - this is deliberately named `ticTacSolved` to avoid naming companies also emphasizes the spirit of the project
+
+The implementation is intentionally **standard-library only**
+tools used: `sqlc`
 
 ## Commands
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 var (

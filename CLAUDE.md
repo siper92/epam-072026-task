@@ -8,7 +8,7 @@ info [README.md](README.md)
 
 # Test
  - table-driven where sensible, using t.Run, 
- - plain testing package, and the error-code helper errs.HasCode from epam/task/pkg/errs (already imported). 
+ - plain testing package, and the error-code helper errs.HasCode from ticTacSolved/task/pkg/errs (already imported). 
  - Known error codes used by the package: CodeInvalidInput, CodeInvalidTransition, CodeGameFinished, CodeOutOfBounds, CodeCellOccupied.
 
 # Documents and MD files

@@ -3,7 +3,7 @@ package util
 import (
 	"testing"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 func TestNewIDUnique(t *testing.T) {

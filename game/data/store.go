@@ -2,7 +2,7 @@ package data
 
 import (
 	"context"
-	"epam/task/game/data/gen"
+	"ticTacSolved/task/game/data/gen"
 )
 
 type GameStore interface {

@@ -2,15 +2,15 @@ package service
 
 import (
 	"context"
-	"epam/task/game/data/gen"
 	"os"
 	"testing"
+	"ticTacSolved/task/game/data/gen"
 
-	"epam/task/game/auth"
-	"epam/task/game/data"
-	"epam/task/game/state_machine"
-	"epam/task/pkg/config"
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/game/auth"
+	"ticTacSolved/task/game/data"
+	"ticTacSolved/task/game/state_machine"
+	"ticTacSolved/task/pkg/config"
+	"ticTacSolved/task/pkg/errs"
 )
 
 func TestMain(m *testing.M) {

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 type fakeTokenStore struct {

@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"epam/task/game/data/gen"
+	"ticTacSolved/task/game/data/gen"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 type GameToken struct {

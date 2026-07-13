@@ -3,10 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
-	"epam/task/game/data/gen"
 	"errors"
+	"ticTacSolved/task/game/data/gen"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 type sqlStore struct {

@@ -1,7 +1,7 @@
 package gen
 
 import (
-	"epam/task/game/auth"
+	"ticTacSolved/task/game/auth"
 )
 
 const (

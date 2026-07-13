@@ -3,7 +3,7 @@ package state_machine
 import (
 	"testing"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 func TestParseGameState(t *testing.T) {

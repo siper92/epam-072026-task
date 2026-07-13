@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"epam/task/pkg/config"
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/config"
+	"ticTacSolved/task/pkg/errs"
 )
 
 func TestMain(m *testing.M) {

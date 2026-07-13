@@ -4,13 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"epam/task/game/data/gen"
 	"strings"
+	"ticTacSolved/task/game/data/gen"
 
-	"epam/task/game/auth"
-	"epam/task/game/data"
-	"epam/task/game/state_machine"
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/game/auth"
+	"ticTacSolved/task/game/data"
+	"ticTacSolved/task/game/state_machine"
+	"ticTacSolved/task/pkg/errs"
 )
 
 const (

@@ -1,8 +1,8 @@
 package state_machine
 
 import (
-	"epam/task/pkg/errs"
 	"strings"
+	"ticTacSolved/task/pkg/errs"
 )
 
 type GameStatus string

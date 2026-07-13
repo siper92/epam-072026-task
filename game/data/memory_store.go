@@ -2,10 +2,10 @@ package data
 
 import (
 	"context"
-	"epam/task/game/data/gen"
 	"sync"
+	"ticTacSolved/task/game/data/gen"
 
-	"epam/task/pkg/errs"
+	"ticTacSolved/task/pkg/errs"
 )
 
 type MemoryStore struct {
