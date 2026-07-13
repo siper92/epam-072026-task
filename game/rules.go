@@ -1,7 +1,6 @@
 package game
 
 import (
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 )
 
@@ -16,8 +15,8 @@ func playerMark(state *GameState, playerID string) (Mark, error) {
 	}
 }
 
-func turnMark(status statemachine.State) Mark {
-	if status == statemachine.StateTurnO {
+func turnMark(status state_machine.State) Mark {
+	if status == state_machine.StateTurnO {
 		return MarkO
 	}
 	return MarkX

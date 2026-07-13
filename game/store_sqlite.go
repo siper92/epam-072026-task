@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 )
 
@@ -90,8 +89,8 @@ func (s *SQLiteStore) Load(gameID string) (GameState, error) {
 		return GameState{}, errs.Wrap(errs.CodeStorageFailure, "stored grid is corrupt", err)
 	}
 	state.Grid = grid
-	state.Status = statemachine.State(status)
-	if !statemachine.IsValid(state.Status) {
+	state.Status = state_machine.State(status)
+	if !state_machine.IsValid(state.Status) {
 		return GameState{}, errs.Newf(errs.CodeStorageFailure, "stored status %q is corrupt", status)
 	}
 	return state, nil

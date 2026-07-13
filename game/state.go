@@ -1,7 +1,6 @@
 package game
 
 import (
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 	"epam/task/pkg/util"
 )
@@ -61,11 +60,11 @@ type GameState struct {
 	PlayerX   string
 	PlayerO   string
 	Grid      Grid
-	Status    statemachine.State
+	Status    state_machine.State
 	WinnerID  string
 	MoveCount int
 }
 
 func (s GameState) Finished() bool {
-	return statemachine.IsTerminal(s.Status)
+	return state_machine.IsTerminal(s.Status)
 }

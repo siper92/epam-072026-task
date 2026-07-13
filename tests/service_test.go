@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"epam/task/game"
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 )
 
@@ -32,8 +31,8 @@ func TestNewGame(t *testing.T) {
 	if state.ID == "" {
 		t.Error("expected non-empty game ID")
 	}
-	if state.Status != statemachine.StateTurnX {
-		t.Errorf("expected initial status %q, got %q", statemachine.StateTurnX, state.Status)
+	if state.Status != state_machine.StateTurnX {
+		t.Errorf("expected initial status %q, got %q", state_machine.StateTurnX, state.Status)
 	}
 	if state.PlayerX != "alice" || state.PlayerO != "bob" {
 		t.Errorf("unexpected players: %q, %q", state.PlayerX, state.PlayerO)
@@ -73,8 +72,8 @@ func TestXWinsRow(t *testing.T) {
 	move(t, svc, initial.ID, "bob", 1, 1)
 	final := move(t, svc, initial.ID, "alice", 0, 2)
 
-	if final.Status != statemachine.StateWonX {
-		t.Errorf("expected status %q, got %q", statemachine.StateWonX, final.Status)
+	if final.Status != state_machine.StateWonX {
+		t.Errorf("expected status %q, got %q", state_machine.StateWonX, final.Status)
 	}
 	if final.WinnerID != "alice" {
 		t.Errorf("expected winner alice, got %q", final.WinnerID)
@@ -90,8 +89,8 @@ func TestOWinsColumn(t *testing.T) {
 	move(t, svc, initial.ID, "alice", 2, 1)
 	final := move(t, svc, initial.ID, "bob", 2, 2)
 
-	if final.Status != statemachine.StateWonO {
-		t.Errorf("expected status %q, got %q", statemachine.StateWonO, final.Status)
+	if final.Status != state_machine.StateWonO {
+		t.Errorf("expected status %q, got %q", state_machine.StateWonO, final.Status)
 	}
 	if final.WinnerID != "bob" {
 		t.Errorf("expected winner bob, got %q", final.WinnerID)
@@ -106,8 +105,8 @@ func TestXWinsDiagonal(t *testing.T) {
 	move(t, svc, initial.ID, "bob", 0, 2)
 	final := move(t, svc, initial.ID, "alice", 2, 2)
 
-	if final.Status != statemachine.StateWonX {
-		t.Errorf("expected status %q, got %q", statemachine.StateWonX, final.Status)
+	if final.Status != state_machine.StateWonX {
+		t.Errorf("expected status %q, got %q", state_machine.StateWonX, final.Status)
 	}
 	if final.WinnerID != "alice" {
 		t.Errorf("expected winner alice, got %q", final.WinnerID)
@@ -126,8 +125,8 @@ func TestOWinsAntiDiagonal(t *testing.T) {
 	move(t, svc, initial.ID, "alice", 2, 2)
 	final := move(t, svc, initial.ID, "bob", 2, 0)
 
-	if final.Status != statemachine.StateWonO {
-		t.Errorf("expected status %q, got %q", statemachine.StateWonO, final.Status)
+	if final.Status != state_machine.StateWonO {
+		t.Errorf("expected status %q, got %q", state_machine.StateWonO, final.Status)
 	}
 	if final.WinnerID != "bob" {
 		t.Errorf("expected winner bob, got %q", final.WinnerID)
@@ -149,8 +148,8 @@ func TestDraw(t *testing.T) {
 	move(t, svc, initial.ID, "bob", 2, 2)
 	final := move(t, svc, initial.ID, "alice", 2, 1)
 
-	if final.Status != statemachine.StateDraw {
-		t.Errorf("expected status %q, got %q", statemachine.StateDraw, final.Status)
+	if final.Status != state_machine.StateDraw {
+		t.Errorf("expected status %q, got %q", state_machine.StateDraw, final.Status)
 	}
 	if final.WinnerID != "" {
 		t.Errorf("expected no winner, got %q", final.WinnerID)
@@ -164,11 +163,11 @@ func TestForfeit(t *testing.T) {
 	cases := []struct {
 		name       string
 		forfeiter  string
-		wantStatus statemachine.State
+		wantStatus state_machine.State
 		wantWinner string
 	}{
-		{"X forfeits", "alice", statemachine.StateWonO, "bob"},
-		{"O forfeits", "bob", statemachine.StateWonX, "alice"},
+		{"X forfeits", "alice", state_machine.StateWonO, "bob"},
+		{"O forfeits", "bob", state_machine.StateWonX, "alice"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -194,8 +193,8 @@ func TestForfeitOutOfTurn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("forfeit on opponent's turn failed: %v", err)
 	}
-	if final.Status != statemachine.StateWonO {
-		t.Errorf("expected status %q, got %q", statemachine.StateWonO, final.Status)
+	if final.Status != state_machine.StateWonO {
+		t.Errorf("expected status %q, got %q", state_machine.StateWonO, final.Status)
 	}
 	if final.WinnerID != "bob" {
 		t.Errorf("expected winner bob, got %q", final.WinnerID)

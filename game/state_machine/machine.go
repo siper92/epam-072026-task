@@ -1,4 +1,4 @@
-package statemachine
+package state_machine
 
 import (
 	"epam/task/pkg/errs"

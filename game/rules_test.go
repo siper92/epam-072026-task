@@ -3,7 +3,6 @@ package game
 import (
 	"testing"
 
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 )
 
@@ -121,24 +120,24 @@ func TestValidateMove(t *testing.T) {
 	grid := gridFromRows([GridSize]string{"X__", "_O_", "___"})
 	cases := []struct {
 		name   string
-		status statemachine.State
+		status state_machine.State
 		mark   Mark
 		row    int
 		col    int
 		code   errs.Code
 	}{
-		{"valid O move", statemachine.StateTurnO, MarkO, 1, 0, ""},
-		{"valid X move", statemachine.StateTurnX, MarkX, 2, 2, ""},
-		{"X out of turn", statemachine.StateTurnO, MarkX, 2, 2, errs.CodeOutOfTurn},
-		{"O out of turn", statemachine.StateTurnX, MarkO, 2, 2, errs.CodeOutOfTurn},
-		{"cell occupied by X", statemachine.StateTurnO, MarkO, 0, 0, errs.CodeCellOccupied},
-		{"cell occupied by O", statemachine.StateTurnX, MarkX, 1, 1, errs.CodeCellOccupied},
-		{"row out of bounds", statemachine.StateTurnO, MarkO, GridSize, 0, errs.CodeOutOfBounds},
-		{"negative row", statemachine.StateTurnO, MarkO, -1, 0, errs.CodeOutOfBounds},
-		{"col out of bounds", statemachine.StateTurnO, MarkO, 0, GridSize, errs.CodeOutOfBounds},
-		{"negative col", statemachine.StateTurnO, MarkO, 0, -1, errs.CodeOutOfBounds},
-		{"both out of bounds", statemachine.StateTurnO, MarkO, -1, GridSize, errs.CodeOutOfBounds},
-		{"far out of bounds", statemachine.StateTurnO, MarkO, 100, 100, errs.CodeOutOfBounds},
+		{"valid O move", state_machine.StateTurnO, MarkO, 1, 0, ""},
+		{"valid X move", state_machine.StateTurnX, MarkX, 2, 2, ""},
+		{"X out of turn", state_machine.StateTurnO, MarkX, 2, 2, errs.CodeOutOfTurn},
+		{"O out of turn", state_machine.StateTurnX, MarkO, 2, 2, errs.CodeOutOfTurn},
+		{"cell occupied by X", state_machine.StateTurnO, MarkO, 0, 0, errs.CodeCellOccupied},
+		{"cell occupied by O", state_machine.StateTurnX, MarkX, 1, 1, errs.CodeCellOccupied},
+		{"row out of bounds", state_machine.StateTurnO, MarkO, GridSize, 0, errs.CodeOutOfBounds},
+		{"negative row", state_machine.StateTurnO, MarkO, -1, 0, errs.CodeOutOfBounds},
+		{"col out of bounds", state_machine.StateTurnO, MarkO, 0, GridSize, errs.CodeOutOfBounds},
+		{"negative col", state_machine.StateTurnO, MarkO, 0, -1, errs.CodeOutOfBounds},
+		{"both out of bounds", state_machine.StateTurnO, MarkO, -1, GridSize, errs.CodeOutOfBounds},
+		{"far out of bounds", state_machine.StateTurnO, MarkO, 100, 100, errs.CodeOutOfBounds},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -181,16 +180,16 @@ func TestMoveEvent(t *testing.T) {
 		name string
 		rows [GridSize]string
 		mark Mark
-		want statemachine.Event
+		want state_machine.Event
 	}{
-		{"X wins row", [GridSize]string{"XXX", "OO_", "___"}, MarkX, statemachine.EventWinX},
-		{"X wins diagonal", [GridSize]string{"XO_", "OX_", "__X"}, MarkX, statemachine.EventWinX},
-		{"O wins row", [GridSize]string{"XX_", "OOO", "X__"}, MarkO, statemachine.EventWinO},
-		{"O wins column", [GridSize]string{"OXX", "OX_", "O__"}, MarkO, statemachine.EventWinO},
-		{"draw on full grid", [GridSize]string{"XOX", "OOX", "XXO"}, MarkX, statemachine.EventDraw},
-		{"X keeps playing", [GridSize]string{"X__", "___", "___"}, MarkX, statemachine.EventMoveX},
-		{"O keeps playing", [GridSize]string{"XO_", "___", "___"}, MarkO, statemachine.EventMoveO},
-		{"X wins on last cell", [GridSize]string{"XOO", "OXX", "XOX"}, MarkX, statemachine.EventWinX},
+		{"X wins row", [GridSize]string{"XXX", "OO_", "___"}, MarkX, state_machine.EventWinX},
+		{"X wins diagonal", [GridSize]string{"XO_", "OX_", "__X"}, MarkX, state_machine.EventWinX},
+		{"O wins row", [GridSize]string{"XX_", "OOO", "X__"}, MarkO, state_machine.EventWinO},
+		{"O wins column", [GridSize]string{"OXX", "OX_", "O__"}, MarkO, state_machine.EventWinO},
+		{"draw on full grid", [GridSize]string{"XOX", "OOX", "XXO"}, MarkX, state_machine.EventDraw},
+		{"X keeps playing", [GridSize]string{"X__", "___", "___"}, MarkX, state_machine.EventMoveX},
+		{"O keeps playing", [GridSize]string{"XO_", "___", "___"}, MarkO, state_machine.EventMoveO},
+		{"X wins on last cell", [GridSize]string{"XOO", "OXX", "XOX"}, MarkX, state_machine.EventWinX},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

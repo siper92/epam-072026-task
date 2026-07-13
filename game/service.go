@@ -3,7 +3,6 @@ package game
 import (
 	"sync"
 
-	"epam/task/game/statemachine"
 	"epam/task/pkg/errs"
 	"epam/task/pkg/util"
 )
@@ -51,7 +50,7 @@ func (s *Service) NewGame(playerXID, playerOID string) (GameState, error) {
 		PlayerX: playerXID,
 		PlayerO: playerOID,
 		Grid:    NewGrid(),
-		Status:  statemachine.Initial(),
+		Status:  state_machine.Initial(),
 	}
 	if err := s.save(state); err != nil {
 		return GameState{}, err
@@ -78,15 +77,15 @@ func (s *Service) GameAction(gameID string, action Action) (GameState, error) {
 	if err != nil {
 		return GameState{}, err
 	}
-	next, err := statemachine.Next(state.Status, event)
+	next, err := state_machine.Next(state.Status, event)
 	if err != nil {
 		return GameState{}, err
 	}
 	state.Status = next
 	switch state.Status {
-	case statemachine.StateWonX:
+	case state_machine.StateWonX:
 		state.WinnerID = state.PlayerX
-	case statemachine.StateWonO:
+	case state_machine.StateWonO:
 		state.WinnerID = state.PlayerO
 	}
 	if err := s.save(state); err != nil {
@@ -99,7 +98,7 @@ func (s *Service) GetState(gameID string) (GameState, error) {
 	return s.load(gameID)
 }
 
-func applyAction(state *GameState, mark Mark, action Action) (statemachine.Event, error) {
+func applyAction(state *GameState, mark Mark, action Action) (state_machine.Event, error) {
 	switch action.Type {
 	case ActionMove:
 		if err := validateMove(state, mark, action.Row, action.Col); err != nil {
@@ -114,27 +113,27 @@ func applyAction(state *GameState, mark Mark, action Action) (statemachine.Event
 	}
 }
 
-func moveEvent(grid Grid, mark Mark) statemachine.Event {
+func moveEvent(grid Grid, mark Mark) state_machine.Event {
 	switch {
 	case hasWin(grid, mark):
 		if mark == MarkO {
-			return statemachine.EventWinO
+			return state_machine.EventWinO
 		}
-		return statemachine.EventWinX
+		return state_machine.EventWinX
 	case isFull(grid):
-		return statemachine.EventDraw
+		return state_machine.EventDraw
 	case mark == MarkO:
-		return statemachine.EventMoveO
+		return state_machine.EventMoveO
 	default:
-		return statemachine.EventMoveX
+		return state_machine.EventMoveX
 	}
 }
 
-func forfeitEvent(mark Mark) statemachine.Event {
+func forfeitEvent(mark Mark) state_machine.Event {
 	if mark == MarkO {
-		return statemachine.EventForfeitO
+		return state_machine.EventForfeitO
 	}
-	return statemachine.EventForfeitX
+	return state_machine.EventForfeitX
 }
 
 func (s *Service) load(gameID string) (GameState, error) {
@@ -148,7 +147,7 @@ func (s *Service) load(gameID string) (GameState, error) {
 		}
 		return GameState{}, errs.Wrap(errs.CodeStorageFailure, "failed to load game", err)
 	}
-	if !statemachine.IsValid(state.Status) {
+	if !state_machine.IsValid(state.Status) {
 		return GameState{}, errs.Newf(errs.CodeStorageFailure, "game %q has corrupt status %q", gameID, state.Status)
 	}
 	return state, nil
