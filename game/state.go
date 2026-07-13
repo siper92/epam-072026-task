@@ -1,6 +1,7 @@
 package game
 
 import (
+	"epam/task/game/state_machine"
 	"epam/task/pkg/errs"
 	"epam/task/pkg/util"
 )

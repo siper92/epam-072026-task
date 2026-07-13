@@ -2,6 +2,7 @@ package game
 
 import (
 	"database/sql"
+	"epam/task/game/state_machine"
 	"errors"
 
 	"epam/task/pkg/errs"
