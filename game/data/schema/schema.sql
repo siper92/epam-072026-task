@@ -15,5 +15,6 @@ CREATE TABLE games (
 
 CREATE TABLE tokens (
     token TEXT PRIMARY KEY,
+    player_id TEXT NOT NULL UNIQUE,
     expires_at INTEGER NOT NULL
 );

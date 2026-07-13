@@ -24,6 +24,7 @@ func (s *gameService) ValidateGameToken(ctx context.Context, token string) (Game
 	if err != nil {
 		return GameToken{}, err
 	}
+
 	gameToken := GameToken{
 		GameID:   claims[gen.ClaimGameID],
 		PlayerID: claims[gen.ClaimPlayerID],
@@ -36,6 +37,7 @@ func (s *gameService) ValidateGameToken(ctx context.Context, token string) (Game
 	if gameToken.Mark != markX && gameToken.Mark != markO {
 		return GameToken{}, errs.Newf(errs.CodeInvalidToken, "invalid player mark %q", gameToken.Mark)
 	}
+
 	return gameToken, nil
 }
 
@@ -43,5 +45,6 @@ func (s *gameService) ValidateJoinCode(game gen.Game, code string) error {
 	if game.IsPublic || game.Code == code {
 		return nil
 	}
+
 	return errs.New(errs.CodeInvalidInput, "invalid game code")
 }

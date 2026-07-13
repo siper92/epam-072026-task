@@ -75,7 +75,7 @@ type testUser struct {
 }
 
 func (u testUser) TokenData() map[string]string {
-	return map[string]string{"sub": u.ID}
+	return map[string]string{ClaimPlayerID: u.ID}
 }
 
 func TestToToken(t *testing.T) {
@@ -84,7 +84,7 @@ func TestToToken(t *testing.T) {
 		t.Fatalf("ToToken: %v", err)
 	}
 
-	value, err := GetClaim(token, "sub")
+	value, err := GetClaim(token, ClaimPlayerID)
 	if err != nil {
 		t.Fatalf("GetClaim: %v", err)
 	}

@@ -21,15 +21,19 @@ func (q *Queries) GetTokenExpiry(ctx context.Context, token string) (int64, erro
 }
 
 const saveToken = `-- name: SaveToken :exec
-INSERT INTO tokens (token, expires_at) VALUES (?, ?)
+INSERT INTO tokens (token, player_id, expires_at) VALUES (?, ?, ?)
+ON CONFLICT(player_id) DO UPDATE SET
+    token = excluded.token,
+    expires_at = excluded.expires_at
 `
 
 type SaveTokenParams struct {
 	Token     string
+	PlayerID  string
 	ExpiresAt int64
 }
 
 func (q *Queries) SaveToken(ctx context.Context, arg SaveTokenParams) error {
-	_, err := q.db.ExecContext(ctx, saveToken, arg.Token, arg.ExpiresAt)
+	_, err := q.db.ExecContext(ctx, saveToken, arg.Token, arg.PlayerID, arg.ExpiresAt)
 	return err
 }

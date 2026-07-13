@@ -118,6 +118,7 @@ func (s *gameService) MakeMove(ctx context.Context, token string, row int, col i
 	if err != nil {
 		return gen.Game{}, err
 	}
+
 	game, err := s.games.GetGame(ctx, gameToken.GameID)
 	if err != nil {
 		return gen.Game{}, err
@@ -128,23 +129,28 @@ func (s *gameService) MakeMove(ctx context.Context, token string, row int, col i
 	if game.Status == string(state_machine.StatusWaitingForPlayers) {
 		return gen.Game{}, errs.New(errs.CodeInvalidTransition, "game has not started yet")
 	}
+
 	machine, err := state_machine.NewStateMachine(game.Board)
 	if err != nil {
 		return gen.Game{}, err
 	}
+
 	state := machine.GetCurrentState()
 	if state.CurrentPlayer != "" && state.CurrentPlayer != gameToken.Mark {
 		return gen.Game{}, errs.Newf(errs.CodeInvalidTransition, "it is not player %q turn", gameToken.Mark)
 	}
+
 	if err = machine.ProcessMove(row, col); err != nil {
 		return gen.Game{}, err
 	}
+
 	state = machine.GetCurrentState()
 	game.Board = encodeBoard(state.Board)
 	game.Status = string(state.State)
 	if err = s.games.UpdateGameState(ctx, game.ID, game.Board, game.Status); err != nil {
 		return gen.Game{}, err
 	}
+
 	return game, nil
 }
 

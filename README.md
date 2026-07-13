@@ -19,7 +19,8 @@ Admin role is for token role example:
 A Tic-Tac-Toe game server = Go module `ticTacSolved/task`, Go 1.25.
  - this is deliberately named `ticTacSolved` to avoid naming companies also emphasizes the spirit of the project
 
-The implementation is intentionally **standard-library only**
+The game domain is intentionally **standard-library only**;
+the CLI layer uses `cobra` and `viper`
 tools used: `sqlc`
 
 ## Commands
@@ -40,7 +41,27 @@ Two top-level trees:
 
 ### Auth (`game/auth`)
 
-// token usage - game token specifics
+Tokens are HS256 JWTs signed with `JWT_SECRET` and carry their own expiration:
+ - `Issue` stamps an `exp` claim (unix seconds) into the token, so `Validate`
+   checks expiration from the token itself, no store roundtrip needed
+ - a `player_id` claim is required on every issued token
+
+Each player has exactly one active token at a time:
+ - issuing a new token replaces the previous one for that player
+ - active tokens live in a package-level in-memory cache (`tokenCache`),
+   keyed by player id; a ticker inside the cache struct evicts entries
+   after a set time (`TokenCacheTTL`)
+ - on a cache miss for a still-unexpired token, the store is checked;
+   a found token is valid and is cached again
+ - the `tokens` table keys on `player_id` (unique) and `SaveToken` upserts,
+   so the single-active-token rule also holds at the DB level
+
+### CLI (`cmd/`)
+
+The service is started through a cobra CLI configured with viper
+ - `go run . serve` - starts the HTTP server (implementation pending)
+ - flags: `--host` (default `127.0.0.1`), `--port` (default `8080`)
+ - env overrides via viper: `GAME_SERVER_HOST`, `GAME_SERVER_PORT`
 
 ### Config (`pkg/config`)
 

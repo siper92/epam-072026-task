@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	ClaimPlayerID   = "player_id"
+	ClaimPlayerID   = auth.ClaimPlayerID
 	ClaimPlayerName = "player_name"
 	ClaimGameID     = "game_id"
 	ClaimGameCode   = "game_code"

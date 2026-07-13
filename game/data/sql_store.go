@@ -55,8 +55,17 @@ func (s *sqlStore) ListWaitingGames(ctx context.Context, status string) ([]gen.G
 	return s.q.ListWaitingGames(ctx, status)
 }
 
-func (s *sqlStore) SaveToken(ctx context.Context, token string, expiresAt int64) error {
-	return s.q.SaveToken(ctx, gen.SaveTokenParams{Token: token, ExpiresAt: expiresAt})
+func (s *sqlStore) SaveToken(
+	ctx context.Context,
+	playerID string,
+	token string,
+	expiresAt int64,
+) error {
+	return s.q.SaveToken(ctx, gen.SaveTokenParams{
+		Token:     token,
+		PlayerID:  playerID,
+		ExpiresAt: expiresAt,
+	})
 }
 
 func (s *sqlStore) GetTokenExpiry(ctx context.Context, token string) (int64, error) {

@@ -9,19 +9,19 @@ import (
 )
 
 type MemoryStore struct {
-	mu      sync.RWMutex
-	games   map[string]gen.Game
-	players map[string]gen.Player
-	tokens  map[string]int64
+	mu           sync.RWMutex
+	games        map[string]gen.Game
+	players      map[string]gen.Player
+	playerTokens map[string]gen.Token
 }
 
 var _ Store = (*MemoryStore)(nil)
 
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{
-		games:   map[string]gen.Game{},
-		players: map[string]gen.Player{},
-		tokens:  map[string]int64{},
+		games:        map[string]gen.Game{},
+		players:      map[string]gen.Player{},
+		playerTokens: map[string]gen.Token{},
 	}
 }
 
@@ -103,19 +103,29 @@ func (s *MemoryStore) ListWaitingGames(_ context.Context, status string) ([]gen.
 	return games, nil
 }
 
-func (s *MemoryStore) SaveToken(_ context.Context, token string, expiresAt int64) error {
+func (s *MemoryStore) SaveToken(
+	_ context.Context,
+	playerID string,
+	token string,
+	expiresAt int64,
+) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.tokens[token] = expiresAt
+	s.playerTokens[playerID] = gen.Token{
+		Token:     token,
+		PlayerID:  playerID,
+		ExpiresAt: expiresAt,
+	}
 	return nil
 }
 
 func (s *MemoryStore) GetTokenExpiry(_ context.Context, token string) (int64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	expiresAt, ok := s.tokens[token]
-	if !ok {
-		return 0, errs.New(errs.CodeInvalidToken, "unknown token")
+	for _, stored := range s.playerTokens {
+		if stored.Token == token {
+			return stored.ExpiresAt, nil
+		}
 	}
-	return expiresAt, nil
+	return 0, errs.New(errs.CodeInvalidToken, "unknown token")
 }

@@ -22,7 +22,7 @@ type LobbyStore interface {
 }
 
 type TokenStore interface {
-	SaveToken(ctx context.Context, token string, expiresAt int64) error
+	SaveToken(ctx context.Context, playerID string, token string, expiresAt int64) error
 	GetTokenExpiry(ctx context.Context, token string) (int64, error)
 }
 

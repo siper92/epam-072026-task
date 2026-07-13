@@ -21,5 +21,6 @@ type Player struct {
 
 type Token struct {
 	Token     string
+	PlayerID  string
 	ExpiresAt int64
 }
