@@ -111,10 +111,12 @@ func (s *MemoryStore) SaveToken(
 ) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	delete(s.playerTokens, playerID)
 	s.playerTokens[playerID] = gen.Token{
 		Token:     token,
 		PlayerID:  playerID,
 		ExpiresAt: expiresAt,
+		Active:    true,
 	}
 	return nil
 }

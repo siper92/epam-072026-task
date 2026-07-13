@@ -35,6 +35,10 @@ func newTokenCache(ttl time.Duration) *tokenCache {
 	return c
 }
 
+func (c *tokenCache) stop() {
+	c.timer.Stop()
+}
+
 func (c *tokenCache) evictOnTick() {
 	for range c.timer.C {
 		c.evictStale()
@@ -58,8 +62,7 @@ func (c *tokenCache) isStale(entry cacheEntry) bool {
 func (c *tokenCache) put(playerID string, token string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	tokenTime := c.now().Add(-c.ttl)
-	c.tokens[playerID] = cacheEntry{token: token, storedAt: tokenTime}
+	c.tokens[playerID] = cacheEntry{token: token, storedAt: c.now()}
 }
 
 func (c *tokenCache) get(playerID string) (string, bool) {

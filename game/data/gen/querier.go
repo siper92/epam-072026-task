@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CreateGame(ctx context.Context, arg CreateGameParams) error
 	CreatePlayer(ctx context.Context, arg CreatePlayerParams) error
+	DeactivatePlayerTokens(ctx context.Context, playerID string) error
 	GetGame(ctx context.Context, id string) (Game, error)
 	GetPlayer(ctx context.Context, id string) (Player, error)
 	GetTokenExpiry(ctx context.Context, token string) (int64, error)

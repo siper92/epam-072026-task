@@ -23,4 +23,5 @@ type Token struct {
 	Token     string
 	PlayerID  string
 	ExpiresAt int64
+	Active    bool
 }

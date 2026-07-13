@@ -61,6 +61,9 @@ func (s *sqlStore) SaveToken(
 	token string,
 	expiresAt int64,
 ) error {
+	if err := s.q.DeactivatePlayerTokens(ctx, playerID); err != nil {
+		return err
+	}
 	return s.q.SaveToken(ctx, gen.SaveTokenParams{
 		Token:     token,
 		PlayerID:  playerID,

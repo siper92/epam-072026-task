@@ -15,6 +15,9 @@ CREATE TABLE games (
 
 CREATE TABLE tokens (
     token TEXT PRIMARY KEY,
-    player_id TEXT NOT NULL UNIQUE,
-    expires_at INTEGER NOT NULL
+    player_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE
 );
+
+CREATE INDEX idx_tokens_player_active ON tokens (player_id, active);

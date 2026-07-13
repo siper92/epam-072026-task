@@ -9,8 +9,17 @@ import (
 	"context"
 )
 
+const deactivatePlayerTokens = `-- name: DeactivatePlayerTokens :exec
+UPDATE tokens SET active = FALSE WHERE player_id = ? AND active = TRUE
+`
+
+func (q *Queries) DeactivatePlayerTokens(ctx context.Context, playerID string) error {
+	_, err := q.db.ExecContext(ctx, deactivatePlayerTokens, playerID)
+	return err
+}
+
 const getTokenExpiry = `-- name: GetTokenExpiry :one
-SELECT expires_at FROM tokens WHERE token = ?
+SELECT expires_at FROM tokens WHERE token = ? AND active = TRUE
 `
 
 func (q *Queries) GetTokenExpiry(ctx context.Context, token string) (int64, error) {
@@ -21,10 +30,7 @@ func (q *Queries) GetTokenExpiry(ctx context.Context, token string) (int64, erro
 }
 
 const saveToken = `-- name: SaveToken :exec
-INSERT INTO tokens (token, player_id, expires_at) VALUES (?, ?, ?)
-ON CONFLICT(player_id) DO UPDATE SET
-    token = excluded.token,
-    expires_at = excluded.expires_at
+INSERT INTO tokens (token, player_id, expires_at, active) VALUES (?, ?, ?, TRUE)
 `
 
 type SaveTokenParams struct {
