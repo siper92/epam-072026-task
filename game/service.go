@@ -51,7 +51,7 @@ func (s *Service) NewGame(playerXID, playerOID string) (GameState, error) {
 		PlayerX: playerXID,
 		PlayerO: playerOID,
 		Grid:    NewGrid(),
-		Status:  statemachine.StateTurnX,
+		Status:  statemachine.Initial(),
 	}
 	if err := s.save(state); err != nil {
 		return GameState{}, err
@@ -74,25 +74,15 @@ func (s *Service) GameAction(gameID string, action Action) (GameState, error) {
 	if err != nil {
 		return GameState{}, err
 	}
-	machine, err := statemachine.NewGameMachine(state.Status)
+	event, err := applyAction(&state, mark, action)
 	if err != nil {
 		return GameState{}, err
 	}
-
-	switch action.Type {
-	case ActionMove:
-		if err := s.processMove(&state, machine, mark, action.Row, action.Col); err != nil {
-			return GameState{}, err
-		}
-	case ActionForfeit:
-		if err := s.processForfeit(machine, mark); err != nil {
-			return GameState{}, err
-		}
-	default:
-		return GameState{}, errs.Newf(errs.CodeInvalidAction, "unsupported action type %q", action.Type)
+	next, err := statemachine.Next(state.Status, event)
+	if err != nil {
+		return GameState{}, err
 	}
-
-	state.Status = machine.Current()
+	state.Status = next
 	switch state.Status {
 	case statemachine.StateWonX:
 		state.WinnerID = state.PlayerX
@@ -109,38 +99,42 @@ func (s *Service) GetState(gameID string) (GameState, error) {
 	return s.load(gameID)
 }
 
-func (s *Service) processMove(state *GameState, machine *statemachine.Machine, mark Mark, row, col int) error {
-	if err := validateMove(state, mark, row, col); err != nil {
-		return err
+func applyAction(state *GameState, mark Mark, action Action) (statemachine.Event, error) {
+	switch action.Type {
+	case ActionMove:
+		if err := validateMove(state, mark, action.Row, action.Col); err != nil {
+			return "", err
+		}
+		applyMove(state, mark, action.Row, action.Col)
+		return moveEvent(state.Grid, mark), nil
+	case ActionForfeit:
+		return forfeitEvent(mark), nil
+	default:
+		return "", errs.Newf(errs.CodeInvalidAction, "unsupported action type %q", action.Type)
 	}
-	applyMove(state, mark, row, col)
-	event := moveEvent(state.Grid, mark)
-	_, err := machine.Fire(event)
-	return err
-}
-
-func (s *Service) processForfeit(machine *statemachine.Machine, mark Mark) error {
-	event := statemachine.EventForfeitX
-	if mark == MarkO {
-		event = statemachine.EventForfeitO
-	}
-	_, err := machine.Fire(event)
-	return err
 }
 
 func moveEvent(grid Grid, mark Mark) statemachine.Event {
 	switch {
-	case hasWin(grid, mark) && mark == MarkX:
+	case hasWin(grid, mark):
+		if mark == MarkO {
+			return statemachine.EventWinO
+		}
 		return statemachine.EventWinX
-	case hasWin(grid, mark) && mark == MarkO:
-		return statemachine.EventWinO
 	case isFull(grid):
 		return statemachine.EventDraw
-	case mark == MarkX:
-		return statemachine.EventMoveX
-	default:
+	case mark == MarkO:
 		return statemachine.EventMoveO
+	default:
+		return statemachine.EventMoveX
 	}
+}
+
+func forfeitEvent(mark Mark) statemachine.Event {
+	if mark == MarkO {
+		return statemachine.EventForfeitO
+	}
+	return statemachine.EventForfeitX
 }
 
 func (s *Service) load(gameID string) (GameState, error) {
@@ -153,6 +147,9 @@ func (s *Service) load(gameID string) (GameState, error) {
 			return GameState{}, err
 		}
 		return GameState{}, errs.Wrap(errs.CodeStorageFailure, "failed to load game", err)
+	}
+	if !statemachine.IsValid(state.Status) {
+		return GameState{}, errs.Newf(errs.CodeStorageFailure, "game %q has corrupt status %q", gameID, state.Status)
 	}
 	return state, nil
 }

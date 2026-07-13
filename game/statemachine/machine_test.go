@@ -6,6 +6,25 @@ import (
 	"epam/task/pkg/errs"
 )
 
+func TestInitial(t *testing.T) {
+	if Initial() != StateTurnX {
+		t.Errorf("expected initial state %q, got %q", StateTurnX, Initial())
+	}
+}
+
+func TestIsValid(t *testing.T) {
+	for _, s := range []State{StateTurnX, StateTurnO, StateWonX, StateWonO, StateDraw} {
+		if !IsValid(s) {
+			t.Errorf("expected %q to be valid", s)
+		}
+	}
+	for _, s := range []State{"LIMBO", "", "turnx and turno"} {
+		if IsValid(s) {
+			t.Errorf("did not expect %q to be valid", s)
+		}
+	}
+}
+
 func TestNewGameMachineUnknownState(t *testing.T) {
 	for _, s := range []State{"LIMBO", "", "turnx and turno"} {
 		_, err := NewGameMachine(s)
@@ -47,6 +66,13 @@ func TestValidTransitions(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(string(tc.from)+"+"+string(tc.event), func(t *testing.T) {
+			next, err := Next(tc.from, tc.event)
+			if err != nil {
+				t.Fatalf("Next failed: %v", err)
+			}
+			if next != tc.to {
+				t.Errorf("expected Next to return %q, got %q", tc.to, next)
+			}
 			m, err := NewGameMachine(tc.from)
 			if err != nil {
 				t.Fatalf("NewGameMachine failed: %v", err)
@@ -54,12 +80,12 @@ func TestValidTransitions(t *testing.T) {
 			if !m.CanFire(tc.event) {
 				t.Errorf("expected CanFire(%q) in %q", tc.event, tc.from)
 			}
-			next, err := m.Fire(tc.event)
+			fired, err := m.Fire(tc.event)
 			if err != nil {
 				t.Fatalf("Fire failed: %v", err)
 			}
-			if next != tc.to || m.Current() != tc.to {
-				t.Errorf("expected state %q, got %q", tc.to, next)
+			if fired != tc.to || m.Current() != tc.to {
+				t.Errorf("expected state %q, got %q", tc.to, fired)
 			}
 		})
 	}
@@ -84,6 +110,13 @@ func TestInvalidTransitions(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(string(tc.from)+"+"+string(tc.event), func(t *testing.T) {
+			next, err := Next(tc.from, tc.event)
+			if !errs.HasCode(err, errs.CodeInvalidTransition) {
+				t.Errorf("expected Next code %q, got %v", errs.CodeInvalidTransition, err)
+			}
+			if next != tc.from {
+				t.Errorf("Next must not change state on invalid transition, got %q", next)
+			}
 			m, err := NewGameMachine(tc.from)
 			if err != nil {
 				t.Fatalf("NewGameMachine failed: %v", err)
@@ -91,14 +124,26 @@ func TestInvalidTransitions(t *testing.T) {
 			if m.CanFire(tc.event) {
 				t.Errorf("did not expect CanFire(%q) in %q", tc.event, tc.from)
 			}
-			next, err := m.Fire(tc.event)
+			fired, err := m.Fire(tc.event)
 			if !errs.HasCode(err, errs.CodeInvalidTransition) {
 				t.Errorf("expected code %q, got %v", errs.CodeInvalidTransition, err)
 			}
-			if next != tc.from || m.Current() != tc.from {
-				t.Errorf("state must not change on invalid transition, got %q", next)
+			if fired != tc.from || m.Current() != tc.from {
+				t.Errorf("state must not change on invalid transition, got %q", fired)
 			}
 		})
+	}
+}
+
+func TestNextUnknownState(t *testing.T) {
+	for _, s := range []State{"LIMBO", ""} {
+		next, err := Next(s, EventMoveX)
+		if !errs.HasCode(err, errs.CodeInvalidInput) {
+			t.Errorf("expected code %q for %q, got %v", errs.CodeInvalidInput, s, err)
+		}
+		if next != s {
+			t.Errorf("expected unchanged state %q, got %q", s, next)
+		}
 	}
 }
 
@@ -108,27 +153,9 @@ func TestIsTerminal(t *testing.T) {
 			t.Errorf("expected %q to be terminal", s)
 		}
 	}
-	for _, s := range []State{StateTurnX, StateTurnO} {
+	for _, s := range []State{StateTurnX, StateTurnO, "LIMBO", ""} {
 		if IsTerminal(s) {
 			t.Errorf("did not expect %q to be terminal", s)
 		}
 	}
-}
-
-func containsAll(s string, subs ...string) bool {
-	for _, sub := range subs {
-		if !contains(s, sub) {
-			return false
-		}
-	}
-	return true
-}
-
-func contains(s, sub string) bool {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return true
-		}
-	}
-	return false
 }

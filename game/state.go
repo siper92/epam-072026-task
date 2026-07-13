@@ -2,6 +2,8 @@ package game
 
 import (
 	"epam/task/game/statemachine"
+	"epam/task/pkg/errs"
+	"epam/task/pkg/util"
 )
 
 type Mark rune
@@ -24,6 +26,34 @@ func NewGrid() Grid {
 		}
 	}
 	return grid
+}
+
+func (g Grid) Encode() string {
+	var cells [GridSize][GridSize]rune
+	for row := range g {
+		for col := range g[row] {
+			cells[row][col] = rune(g[row][col])
+		}
+	}
+	return util.EncodeGrid(cells)
+}
+
+func ParseGrid(encoded string) (Grid, error) {
+	cells, err := util.DecodeGrid(encoded)
+	if err != nil {
+		return Grid{}, err
+	}
+	var grid Grid
+	for row := range cells {
+		for col := range cells[row] {
+			mark := Mark(cells[row][col])
+			if mark != MarkEmpty && mark != MarkX && mark != MarkO {
+				return Grid{}, errs.Newf(errs.CodeInvalidInput, "invalid mark %q in encoded grid", string(mark))
+			}
+			grid[row][col] = mark
+		}
+	}
+	return grid, nil
 }
 
 type GameState struct {

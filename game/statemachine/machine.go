@@ -26,42 +26,61 @@ const (
 	EventForfeitO Event = "FORFEIT_O"
 )
 
-type transitionKey struct {
-	from  State
-	event Event
+var transitions = map[State]map[Event]State{
+	StateTurnX: {
+		EventMoveX:    StateTurnO,
+		EventWinX:     StateWonX,
+		EventDraw:     StateDraw,
+		EventForfeitX: StateWonO,
+		EventForfeitO: StateWonX,
+	},
+	StateTurnO: {
+		EventMoveO:    StateTurnX,
+		EventWinO:     StateWonO,
+		EventDraw:     StateDraw,
+		EventForfeitX: StateWonO,
+		EventForfeitO: StateWonX,
+	},
+	StateWonX: {},
+	StateWonO: {},
+	StateDraw: {},
 }
 
-var gameTransitions = map[transitionKey]State{
-	{StateTurnX, EventMoveX}:    StateTurnO,
-	{StateTurnO, EventMoveO}:    StateTurnX,
-	{StateTurnX, EventWinX}:     StateWonX,
-	{StateTurnO, EventWinO}:     StateWonO,
-	{StateTurnX, EventDraw}:     StateDraw,
-	{StateTurnO, EventDraw}:     StateDraw,
-	{StateTurnX, EventForfeitX}: StateWonO,
-	{StateTurnX, EventForfeitO}: StateWonX,
-	{StateTurnO, EventForfeitX}: StateWonO,
-	{StateTurnO, EventForfeitO}: StateWonX,
+func Initial() State {
+	return StateTurnX
 }
 
-var validStates = map[State]bool{
-	StateTurnX: true,
-	StateTurnO: true,
-	StateWonX:  true,
-	StateWonO:  true,
-	StateDraw:  true,
+func IsValid(state State) bool {
+	_, ok := transitions[state]
+	return ok
+}
+
+func IsTerminal(state State) bool {
+	outgoing, ok := transitions[state]
+	return ok && len(outgoing) == 0
+}
+
+func Next(from State, event Event) (State, error) {
+	outgoing, ok := transitions[from]
+	if !ok {
+		return from, errs.Newf(errs.CodeInvalidInput, "unknown state %q", from)
+	}
+	next, ok := outgoing[event]
+	if !ok {
+		return from, errs.Newf(errs.CodeInvalidTransition, "event %q not allowed in state %q", event, from)
+	}
+	return next, nil
 }
 
 type Machine struct {
-	current     State
-	transitions map[transitionKey]State
+	current State
 }
 
 func NewGameMachine(initial State) (*Machine, error) {
-	if !validStates[initial] {
+	if !IsValid(initial) {
 		return nil, errs.Newf(errs.CodeInvalidInput, "unknown state %q", initial)
 	}
-	return &Machine{current: initial, transitions: gameTransitions}, nil
+	return &Machine{current: initial}, nil
 }
 
 func (m *Machine) Current() State {
@@ -69,19 +88,15 @@ func (m *Machine) Current() State {
 }
 
 func (m *Machine) CanFire(event Event) bool {
-	_, ok := m.transitions[transitionKey{m.current, event}]
+	_, ok := transitions[m.current][event]
 	return ok
 }
 
 func (m *Machine) Fire(event Event) (State, error) {
-	next, ok := m.transitions[transitionKey{m.current, event}]
-	if !ok {
-		return m.current, errs.Newf(errs.CodeInvalidTransition, "event %q not allowed in state %q", event, m.current)
+	next, err := Next(m.current, event)
+	if err != nil {
+		return m.current, err
 	}
 	m.current = next
 	return next, nil
-}
-
-func IsTerminal(state State) bool {
-	return state == StateWonX || state == StateWonO || state == StateDraw
 }

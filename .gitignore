@@ -3,3 +3,4 @@ _local
 *.local
 task*.md
 .idea
+*.pdf
