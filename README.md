@@ -31,6 +31,11 @@ Common tasks are driven by `just` (see `justfile`);
 - `just build` - build image user by `just compile` (sqlc)
 - `just compile` - generates sqlc files 
 - `just test` - uses on machine go to run tests
+- `just run` - runs the `ttt` server locally (`go run ./cli/server/main serve`)
+- `just compile-check` - runs `just compile` and aborts if generated code changed
+- `just build-prod` - runs `compile-check`, then builds the `ttt-build-image`
+  compile image and the `ttt-server-exam-image` scratch runtime image
+- `just run-prod` - runs the scratch image with port 8080 published
 
 ## Architecture
 
@@ -56,12 +61,34 @@ Each player has exactly one active token at a time:
  - the `tokens` table keys on `player_id` (unique) and `SaveToken` upserts,
    so the single-active-token rule also holds at the DB level
 
-### CLI (`cmd/`)
+### CLI (`cli/`)
 
-The service is started through a cobra CLI configured with viper
- - `go run . serve` - starts the HTTP server (implementation pending)
+The server binary is the `ttt` command, main package at `cli/server/main`
+ - `go run ./cli/server/main serve` - starts the HTTP server (or `just run`)
  - flags: `--host` (default `127.0.0.1`), `--port` (default `8080`)
  - env overrides via viper: `GAME_SERVER_HOST`, `GAME_SERVER_PORT`
+ - `JWT_SECRET` must be set for token issuing (`just run` defaults it for dev)
+
+The client binary is the `ttt-client` command, main package at `cli/client/main`
+ - `go run ./cli/client/main action list` - one shot actions against the server
+ - `go run ./cli/client/main --type cli` - interactive play mode
+ - flags: `--server --user --password --type (cli|file) --token
+   --token-ttl --session-ttl`; every flag is also an env var
+   (`TTT_` prefix) and can live in a `.env` file
+ - session and refresh tokens are stored via `pkg/session`
+   (file store by default, `~/.ttt/session.json`)
+
+### Production image (`_env/prod`)
+
+Multi stage build, see `_env/prod/Dockerfile`
+ - stage `ttt-build-image` compiles a static, self contained binary
+   (`CGO_ENABLED=0`, no runtime dependencies)
+ - stage `ttt-server-exam-image` is `FROM scratch` with only the binary
+ - the image binds `0.0.0.0:8080` and exposes port 8080 so other
+   containers can reach the server over http on a shared docker network:
+   `docker run --network game-net --name ttt-server ttt-server-exam-image`
+ - `just build-prod` first runs `just compile-check`, which regenerates
+   sqlc code and aborts the build if the generated files changed
 
 ### Config (`pkg/config`)
 

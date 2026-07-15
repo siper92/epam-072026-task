@@ -1,0 +1,7 @@
+__local
+_env
+tests
+*.md
+.git
+.idea
+.claude

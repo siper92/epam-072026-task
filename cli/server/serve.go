@@ -1,8 +1,10 @@
-package cmd
+package server
 
 import (
-	"fmt"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,11 +42,18 @@ func mustBindFlag(key string, cmd *cobra.Command, flag string) {
 }
 
 func runServe(cmd *cobra.Command, _ []string) error {
-	addr := fmt.Sprintf(
-		"%s:%d",
+	ctx, stop := signal.NotifyContext(
+		cmd.Context(),
+		os.Interrupt,
+		syscall.SIGTERM,
+	)
+	defer stop()
+
+	srv := NewServer(
 		viper.GetString(keyServerHost),
 		viper.GetInt(keyServerPort),
 	)
-	cmd.Printf("http server will listen on %s, implementation pending\n", addr)
-	return nil
+	cmd.Printf("http server listening on %s\n", srv.Addr())
+
+	return srv.Run(ctx)
 }

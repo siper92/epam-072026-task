@@ -1,4 +1,4 @@
-package cmd
+package server
 
 import (
 	"github.com/spf13/cobra"
@@ -7,8 +7,8 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:          "game-server",
-	Short:        "Tic tac toe game service",
+	Use:          "ttt",
+	Short:        "tic tac toe game service",
 	SilenceUsage: true,
 	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		config.LoadEnv()
