@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"ticTacSolved/task/cli/server/internal/handlers"
 	"ticTacSolved/task/game/auth"
 	"ticTacSolved/task/game/data"
 	"ticTacSolved/task/game/data/gen"
@@ -28,33 +29,12 @@ const (
 	maxRefreshTTL     = 7 * 24 * time.Hour
 )
 
-type LoginResult struct {
-	PlayerID string
-	Session  api.Token
-	Refresh  api.Token
-}
-
-type Authenticator interface {
-	Login(
-		ctx context.Context,
-		user string,
-		password string,
-		sessionTTL int64,
-		refreshTTL int64,
-	) (LoginResult, error)
-	Refresh(
-		ctx context.Context,
-		refreshToken string,
-		sessionTTL int64,
-	) (api.Token, error)
-}
-
 type SessionValidator interface {
 	ValidateSession(ctx context.Context, token string) (string, error)
 }
 
 type Tokens interface {
-	Authenticator
+	handlers.Authenticator
 	SessionValidator
 }
 
@@ -80,9 +60,9 @@ func (t *tokenService) Login(
 	password string,
 	sessionTTL int64,
 	refreshTTL int64,
-) (LoginResult, error) {
+) (handlers.LoginResult, error) {
 	if user == "" || password == "" {
-		return LoginResult{}, errs.New(
+		return handlers.LoginResult{}, errs.New(
 			errs.CodeInvalidInput,
 			"user and password are required",
 		)
@@ -90,19 +70,19 @@ func (t *tokenService) Login(
 
 	playerID := derivePlayerID(user, password)
 	if err := t.ensurePlayer(ctx, playerID, user); err != nil {
-		return LoginResult{}, err
+		return handlers.LoginResult{}, err
 	}
 
 	session, err := t.issueSession(ctx, playerID, user, sessionTTL)
 	if err != nil {
-		return LoginResult{}, err
+		return handlers.LoginResult{}, err
 	}
 	refresh, err := t.issueRefresh(playerID, user, refreshTTL)
 	if err != nil {
-		return LoginResult{}, err
+		return handlers.LoginResult{}, err
 	}
 
-	return LoginResult{
+	return handlers.LoginResult{
 		PlayerID: playerID,
 		Session:  session,
 		Refresh:  refresh,

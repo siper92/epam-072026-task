@@ -19,8 +19,8 @@ log "running unit tests"
 
 log "building server and client binaries"
 mkdir -p "$TTT_WORK/bin"
-(cd "$ROOT_DIR" && go build -o "$TTT_SERVER_BIN" ./cli/server/main)
-(cd "$ROOT_DIR" && go build -o "$TTT_CLIENT_BIN" ./cli/client/main)
+(cd "$ROOT_DIR" && go build -o "$TTT_SERVER_BIN" ./cli/server)
+(cd "$ROOT_DIR" && go build -o "$TTT_CLIENT_BIN" ./cli/client)
 
 start_server
 trap stop_server EXIT

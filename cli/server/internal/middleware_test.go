@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"ticTacSolved/task/cli/server/internal/handlers"
 	"ticTacSolved/task/pkg/api"
 	"ticTacSolved/task/pkg/errs"
 )
@@ -74,7 +75,7 @@ func TestRequireSession(t *testing.T) {
 			router := gin.New()
 			router.Use(ErrorHandler())
 			router.GET("/", RequireSession(tc.validator), func(c *gin.Context) {
-				gotPlayer = PlayerID(c)
+				gotPlayer = handlers.PlayerID(c)
 			})
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -147,7 +148,7 @@ func TestPlayerIDWithoutSession(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	c, _ := gin.CreateTestContext(httptest.NewRecorder())
-	if got := PlayerID(c); got != "" {
+	if got := handlers.PlayerID(c); got != "" {
 		t.Fatalf("PlayerID() = %q, want empty", got)
 	}
 }

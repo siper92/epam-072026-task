@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
+source "/app/tests/lib.sh"
 
 out="$(login auth-alice secret-a)"
 assert_json 'has("player_id")' "$out" "login should return a player id"

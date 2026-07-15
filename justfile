@@ -15,7 +15,7 @@ compile:
 build-test:
     docker build -t {{test-image}} -f _env/test/Dockerfile _env
 
-test: build-test
+test:
     docker run --rm \
         -v {{justfile_directory()}}:/app \
         -v ttt-test-go-cache:/go \

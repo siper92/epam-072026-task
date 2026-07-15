@@ -15,7 +15,6 @@ ttt() {
     mkdir -p "$TTT_WORK/home-$player"
     HOME="$TTT_WORK/home-$player" "$TTT_CLIENT_BIN" \
         --server "$TTT_SERVER_URL" \
-        --output json \
         "$@"
 }
 

@@ -8,7 +8,6 @@ Player-vs-player tests that drive the real `ttt` server binary and the
 - `just test` builds the test image (`_env/test/Dockerfile`) and runs it
   with the repo mounted at `/app` and a named volume for the go cache
 - the image only provides the environment (go toolchain, bash, jq, curl);
-  no source code or dependencies are baked in at build time
 - inside the container `tests/run_tests.sh`:
   - runs the unit tests (`go test ./...`)
   - builds the server and client binaries into a temp dir

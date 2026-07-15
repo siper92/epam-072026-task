@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib.sh"
+source "/app/tests/lib.sh"
 
 login lobby-p1 secret-1 >/dev/null
 login lobby-p2 secret-2 >/dev/null

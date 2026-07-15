@@ -8,15 +8,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"ticTacSolved/task/cli/server/internal/handlers"
 	"ticTacSolved/task/pkg/api"
 	"ticTacSolved/task/pkg/errs"
 )
-
-const playerIDKey = "playerID"
-
-func PlayerID(c *gin.Context) string {
-	return c.GetString(playerIDKey)
-}
 
 func Logging() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -74,7 +69,7 @@ func RequireSession(sessions SessionValidator) gin.HandlerFunc {
 			_ = c.Error(err)
 			return
 		}
-		c.Set(playerIDKey, playerID)
+		handlers.SetPlayerID(c, playerID)
 		c.Next()
 	}
 }

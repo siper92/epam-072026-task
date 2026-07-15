@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"ticTacSolved/task/cli/client/actions"
 	"ticTacSolved/task/cli/client/internal"
 )
 
@@ -62,6 +63,8 @@ func init() {
 	for _, key := range keys {
 		mustBindFlag(key)
 	}
+
+	rootCmd.AddCommand(actions.Command(newClient))
 }
 
 func mustBindFlag(key string) {
