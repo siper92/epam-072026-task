@@ -1,4 +1,4 @@
-package client
+package cmd
 
 import (
 	"errors"
@@ -97,7 +97,7 @@ func runRoot(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 	if conf.Type == internal.TypeCLI {
-		return runInteractive(cmd, conf)
+		return internal.RunInteractive(cmd, conf)
 	}
 	return cmd.Help()
 }
@@ -107,9 +107,6 @@ func newClient() (*internal.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newClientFor(conf), nil
-}
 
-func newClientFor(conf internal.Config) *internal.Client {
-	return internal.NewClient(conf, internal.NewSessionStore(conf))
+	return internal.NewClient(conf, internal.NewSessionStore(conf)), nil
 }

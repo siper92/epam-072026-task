@@ -6,6 +6,7 @@ info [README.md](README.md)
  - don't use to long lines, prefer exceptions or other structures to be on multiple lines
    - human centric formating is preferred - break lines by meaning
  - always add default values to .env.default
+ - when you implement an interface make sure to add compile time checks - `var _ <interface> = (*<struct>)(nil)`
 
 # do
 - prefer usage of tools ro examine and analyze code and dependencies

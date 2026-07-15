@@ -4,3 +4,5 @@ _local
 task*.md
 .idea
 *.pdf
+
+.ttt/

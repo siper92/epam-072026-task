@@ -1,10 +1,11 @@
-package server
+package cmd
 
 import (
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"ticTacSolved/task/cli/server/internal"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -49,7 +50,7 @@ func runServe(cmd *cobra.Command, _ []string) error {
 	)
 	defer stop()
 
-	srv := NewServer(
+	srv := internal.NewServer(
 		viper.GetString(keyServerHost),
 		viper.GetInt(keyServerPort),
 	)

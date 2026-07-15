@@ -1,4 +1,4 @@
-package server
+package internal
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"ticTacSolved/task/cli/server/internal"
 	"ticTacSolved/task/game/auth"
 	"ticTacSolved/task/game/data"
 	"ticTacSolved/task/game/service"
@@ -22,14 +21,14 @@ func NewServer(host string, port int) *Server {
 	store := data.NewMemoryStore()
 	authService := auth.NewService(store)
 	games := service.NewGameService(store, store, authService)
-	tokens := internal.NewTokens(authService, store)
+	tokens := NewTokens(authService, store)
 
 	addr := fmt.Sprintf("%s:%d", host, port)
 	return &Server{
 		addr: addr,
 		http: &http.Server{
 			Addr:              addr,
-			Handler:           internal.NewRouter(games, tokens),
+			Handler:           NewRouter(games, tokens),
 			ReadHeaderTimeout: 5 * time.Second,
 		},
 	}

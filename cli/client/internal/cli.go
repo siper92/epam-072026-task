@@ -1,4 +1,4 @@
-package client
+package internal
 
 import (
 	"bufio"
@@ -8,11 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"ticTacSolved/task/game/utils"
 	"time"
 
 	"github.com/spf13/cobra"
 
-	"ticTacSolved/task/cli/client/internal"
 	"ticTacSolved/task/pkg/errs"
 )
 
@@ -26,8 +26,8 @@ const interactiveHelp = `commands:
   quit                 exit
 `
 
-func runInteractive(cmd *cobra.Command, conf internal.Config) error {
-	c := newClientFor(conf)
+func RunInteractive(cmd *cobra.Command, conf Config) error {
+	c := NewClient(conf, NewSessionStore(conf))
 
 	ctx, stop := signal.NotifyContext(cmd.Context(), os.Interrupt)
 	defer stop()
@@ -83,7 +83,7 @@ func nextLine(
 func handleLine(
 	ctx context.Context,
 	cmd *cobra.Command,
-	c *internal.Client,
+	c *Client,
 	current *string,
 	line string,
 ) bool {
@@ -110,7 +110,7 @@ func handleLine(
 func runInteractiveAction(
 	ctx context.Context,
 	cmd *cobra.Command,
-	c *internal.Client,
+	c *Client,
 	current *string,
 	name string,
 	args []string,
@@ -121,7 +121,7 @@ func runInteractiveAction(
 		if err != nil {
 			return err
 		}
-		cmd.Print(internal.RenderGames(games))
+		cmd.Print(RenderGames(games))
 		return nil
 	case "create":
 		public := len(args) == 0 || args[0] != "private"
@@ -130,7 +130,7 @@ func runInteractiveAction(
 			return err
 		}
 		*current = game.ID
-		cmd.Print(internal.RenderGame(game))
+		cmd.Print(RenderGame(game))
 		return nil
 	case "join":
 		if len(args) < 1 {
@@ -145,7 +145,7 @@ func runInteractiveAction(
 			return err
 		}
 		*current = game.ID
-		cmd.Print(internal.RenderGame(game))
+		cmd.Print(RenderGame(game))
 		return nil
 	case "show":
 		id := *current
@@ -159,13 +159,13 @@ func runInteractiveAction(
 		if err != nil {
 			return err
 		}
-		cmd.Print(internal.RenderGame(game))
+		cmd.Print(RenderGame(game))
 		return nil
 	case "move":
 		if len(args) != 2 {
 			return errs.New(errs.CodeInvalidInput, "usage: move <row> <col>")
 		}
-		row, col, err := parseCell(args[0], args[1])
+		row, col, err := utils.ParseCell(args[0], args[1])
 		if err != nil {
 			return err
 		}
@@ -174,13 +174,13 @@ func runInteractiveAction(
 			return err
 		}
 		*current = game.ID
-		cmd.Print(internal.RenderGame(game))
+		cmd.Print(RenderGame(game))
 		return nil
 	}
 	return errs.Newf(errs.CodeInvalidAction, "unknown command %q, type help", name)
 }
 
-func currentGameID(c *internal.Client) string {
+func currentGameID(c *Client) string {
 	data, err := c.Session()
 	if err != nil {
 		return ""
