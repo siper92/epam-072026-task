@@ -12,10 +12,17 @@ import (
 	"ticTacSolved/task/game/service"
 )
 
+type Runner interface {
+	Addr() string
+	Run(ctx context.Context) error
+}
+
 type Server struct {
 	addr string
 	http *http.Server
 }
+
+var _ Runner = (*Server)(nil)
 
 func NewServer(host string, port int) *Server {
 	store := data.NewMemoryStore()

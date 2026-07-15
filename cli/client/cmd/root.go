@@ -102,7 +102,7 @@ func runRoot(cmd *cobra.Command, _ []string) error {
 	return cmd.Help()
 }
 
-func newClient() (*internal.Client, error) {
+func newClient() (internal.GameClient, error) {
 	conf, err := internal.NewConfig(cfg)
 	if err != nil {
 		return nil, err

@@ -34,7 +34,7 @@ type LoginResult struct {
 	Refresh  api.Token
 }
 
-type Tokens interface {
+type Authenticator interface {
 	Login(
 		ctx context.Context,
 		user string,
@@ -47,7 +47,15 @@ type Tokens interface {
 		refreshToken string,
 		sessionTTL int64,
 	) (api.Token, error)
+}
+
+type SessionValidator interface {
 	ValidateSession(ctx context.Context, token string) (string, error)
+}
+
+type Tokens interface {
+	Authenticator
+	SessionValidator
 }
 
 type tokenService struct {

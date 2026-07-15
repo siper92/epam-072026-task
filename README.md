@@ -78,6 +78,58 @@ The client binary is the `ttt-client` command, main package at `cli/client/main`
  - session and refresh tokens are stored via `pkg/session`
    (file store by default, `~/.ttt/session.json`)
 
+### Shared interfaces (`cli/*/internal`)
+
+The CLI layers expose small interfaces so parts can be shared and
+faked in tests without touching the network or a real token service.
+
+Client (`cli/client/internal/interfaces.go`):
+ - `SessionAuth` - `Session`, `Login`, `Refresh` (token lifecycle)
+ - `Lobby` - `WaitingGames`, `CreateGame`, `JoinGame`
+ - `GamePlay` - `GetGame`, `Move`
+ - `GameClient` - composition of the three, implemented by `*Client`;
+   the cobra commands and the interactive loop depend only on it
+
+Server (`cli/server/internal`):
+ - `Authenticator` - `Login`, `Refresh` (used by the login handlers)
+ - `SessionValidator` - `ValidateSession` (all `RequireSession` needs)
+ - `Tokens` - composition of the two, implemented by `tokenService`
+ - `Runner` - `Addr`, `Run`, implemented by `*Server`
+
+The naming mirrors `game/service` (`Lobby`, `GamePlay`, `GameService`)
+so the client interface reads as the remote twin of the domain service.
+
+### HTTP API (`pkg/api`)
+
+Paths, header names and request/response DTOs live in `pkg/api` and are
+shared by the server handlers and the client.
+
+ - `POST /api/login` - no auth, returns player id, session and refresh tokens
+ - `POST /api/refresh` - no auth, refresh token in the body, returns a session
+ - `GET /api/games` - bearer session, lists games waiting for players
+ - `POST /api/games` - bearer session, creates a game, returns a game token
+ - `GET /api/games/{id}` - bearer session, current game state
+ - `POST /api/games/{id}/join` - bearer session, join code for private games
+ - `POST /api/games/{id}/move` - bearer session plus `X-Game-Token` header
+
+Errors come back as `{"code": "...", "message": "..."}`; the status is
+derived from the `pkg/errs` code (`INVALID_INPUT` -> 400,
+`INVALID_TOKEN` -> 401, `*_NOT_FOUND` -> 404, `CELL_OCCUPIED`,
+`INVALID_TRANSITION`, `GAME_FINISHED`, `OUT_OF_TURN` -> 409,
+anything else -> 500).
+
+## Testing
+
+Run everything with `just test` or `go test ./...`.
+
+ - tests are table-driven with `t.Run`, plain `testing` package only
+ - errors are asserted by code via `errs.HasCode`, never by message
+ - HTTP is exercised with `httptest`; collaborators behind the
+   interfaces above are replaced by in-package fakes
+ - data packages and generated models (`game/data`, `game/data/gen`)
+   are intentionally not unit tested
+ - the full plan and the coverage map live in `test.ai.md`
+
 ### Production image (`_env/prod`)
 
 Multi stage build, see `_env/prod/Dockerfile`

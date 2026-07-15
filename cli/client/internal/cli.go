@@ -83,7 +83,7 @@ func nextLine(
 func handleLine(
 	ctx context.Context,
 	cmd *cobra.Command,
-	c *Client,
+	c GameClient,
 	current *string,
 	line string,
 ) bool {
@@ -110,7 +110,7 @@ func handleLine(
 func runInteractiveAction(
 	ctx context.Context,
 	cmd *cobra.Command,
-	c *Client,
+	c GameClient,
 	current *string,
 	name string,
 	args []string,
@@ -180,7 +180,7 @@ func runInteractiveAction(
 	return errs.Newf(errs.CodeInvalidAction, "unknown command %q, type help", name)
 }
 
-func currentGameID(c *Client) string {
+func currentGameID(c GameClient) string {
 	data, err := c.Session()
 	if err != nil {
 		return ""

@@ -66,7 +66,7 @@ func Logging(next http.Handler) http.Handler {
 	})
 }
 
-func RequireSession(tokens Tokens) Middleware {
+func RequireSession(sessions SessionValidator) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			token, err := bearerToken(r)
@@ -74,7 +74,7 @@ func RequireSession(tokens Tokens) Middleware {
 				writeErr(w, err)
 				return
 			}
-			playerID, err := tokens.ValidateSession(r.Context(), token)
+			playerID, err := sessions.ValidateSession(r.Context(), token)
 			if err != nil {
 				writeErr(w, err)
 				return
