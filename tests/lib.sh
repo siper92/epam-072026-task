@@ -22,7 +22,8 @@ ttt() {
 login() {
     local player="$1"
     local password="$2"
-    ttt "$player" --user "$player" --password "$password" action login
+    shift 2
+    ttt "$player" --user "$player" --password "$password" "$@" action login
 }
 
 json_get() {

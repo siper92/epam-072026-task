@@ -16,14 +16,17 @@ func moveCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Comm
 			if err != nil {
 				return err
 			}
+
 			id, row, col, err := parseMoveArgs(args)
 			if err != nil {
 				return err
 			}
+
 			game, err := c.Move(cmd.Context(), id, row, col)
 			if err != nil {
 				return err
 			}
+
 			newPrinter().Game(cmd, game)
 			return nil
 		},

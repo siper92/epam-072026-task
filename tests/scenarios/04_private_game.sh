@@ -13,7 +13,7 @@ waiting="$(ttt priv-p2 action list)"
 assert_json "[.games[].id | tostring] | index(\"$game_id\") == null" "$waiting" \
     "private game should not show in the lobby"
 
-expect_err ttt priv-p2 action join "$game_id" --code wrong-code
+expect_err_code INVALID_INPUT ttt priv-p2 action join "$game_id" --code wrong-code
 
 joined="$(ttt priv-p2 action join "$game_id" --code "$join_code")"
 assert_json '.game_token | length > 0' "$joined" "join with code should return a game token"

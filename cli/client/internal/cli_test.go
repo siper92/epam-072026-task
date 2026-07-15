@@ -204,7 +204,7 @@ func TestRunInteractiveAction(t *testing.T) {
 			command: "move",
 			args:    []string{"a", "b"},
 			fake:    &fakeGameClient{},
-			wantErr: errs.CodeInvalidInput,
+			wantErr: errs.CodeOutOfBounds,
 		},
 		{
 			name:        "move updates the current game",

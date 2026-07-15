@@ -18,9 +18,9 @@ func TestParseCell(t *testing.T) {
 		{name: "valid cell", rowArg: "1", colArg: "2", wantRow: 1, wantCol: 2},
 		{name: "zero cell", rowArg: "0", colArg: "0"},
 		{name: "negative values parse", rowArg: "-1", colArg: "3", wantRow: -1, wantCol: 3},
-		{name: "invalid row", rowArg: "a", colArg: "0", wantErr: errs.CodeInvalidInput},
-		{name: "invalid col", rowArg: "0", colArg: "b", wantErr: errs.CodeInvalidInput},
-		{name: "empty args", rowArg: "", colArg: "", wantErr: errs.CodeInvalidInput},
+		{name: "invalid row", rowArg: "a", colArg: "0", wantErr: errs.CodeOutOfBounds},
+		{name: "invalid col", rowArg: "0", colArg: "b", wantErr: errs.CodeOutOfBounds},
+		{name: "empty args", rowArg: "", colArg: "", wantErr: errs.CodeOutOfBounds},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
