@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
+
 	"ticTacSolved/task/pkg/api"
 	"ticTacSolved/task/pkg/errs"
 )
@@ -24,6 +26,8 @@ func (s *stubValidator) ValidateSession(context.Context, string) (string, error)
 }
 
 func TestRequireSession(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
 	cases := []struct {
 		name       string
 		header     string
@@ -67,17 +71,18 @@ func TestRequireSession(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotPlayer := ""
-			next := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-				gotPlayer = PlayerID(r.Context())
+			router := gin.New()
+			router.Use(ErrorHandler())
+			router.GET("/", RequireSession(tc.validator), func(c *gin.Context) {
+				gotPlayer = PlayerID(c)
 			})
-			handler := RequireSession(tc.validator)(next)
 
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			if tc.header != "" {
 				req.Header.Set(api.HeaderAuthorization, tc.header)
 			}
 			rec := httptest.NewRecorder()
-			handler.ServeHTTP(rec, req)
+			router.ServeHTTP(rec, req)
 
 			if rec.Code != tc.wantStatus {
 				t.Fatalf("status = %d, want %d", rec.Code, tc.wantStatus)
@@ -89,46 +94,46 @@ func TestRequireSession(t *testing.T) {
 	}
 }
 
-func TestChainAppliesMiddlewareInOrder(t *testing.T) {
-	var order []string
-	mw := func(name string) Middleware {
-		return func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				order = append(order, name)
-				next.ServeHTTP(w, r)
-			})
-		}
+func TestErrorHandlerWritesAttachedError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.Use(ErrorHandler())
+	router.GET("/", func(c *gin.Context) {
+		_ = c.Error(errs.New(errs.CodeInvalidInput, "bad input"))
+	})
+
+	rec := httptest.NewRecorder()
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
-	handler := Chain(
-		http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
-			order = append(order, "handler")
-		}),
-		mw("first"),
-		mw("second"),
-	)
-
-	handler.ServeHTTP(
-		httptest.NewRecorder(),
-		httptest.NewRequest(http.MethodGet, "/", nil),
-	)
-
-	want := "first,second,handler"
-	if got := strings.Join(order, ","); got != want {
-		t.Fatalf("call order = %q, want %q", got, want)
+	var resp api.ErrorResponse
+	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode error response: %v", err)
+	}
+	if resp.Code != "INVALID_INPUT" {
+		t.Fatalf("code = %q, want INVALID_INPUT", resp.Code)
 	}
 }
 
-func TestRecoverTurnsPanicIntoInternalError(t *testing.T) {
-	handler := Recover(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+func TestErrorHandlerTurnsPanicIntoInternalError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	router := gin.New()
+	router.Use(ErrorHandler())
+	router.GET("/", func(c *gin.Context) {
 		panic("boom")
-	}))
+	})
 
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
+	router.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusInternalServerError)
 	}
+
 	var resp api.ErrorResponse
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatalf("failed to decode error response: %v", err)
@@ -139,7 +144,10 @@ func TestRecoverTurnsPanicIntoInternalError(t *testing.T) {
 }
 
 func TestPlayerIDWithoutSession(t *testing.T) {
-	if got := PlayerID(context.Background()); got != "" {
+	gin.SetMode(gin.TestMode)
+
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	if got := PlayerID(c); got != "" {
 		t.Fatalf("PlayerID() = %q, want empty", got)
 	}
 }

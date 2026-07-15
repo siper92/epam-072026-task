@@ -3,26 +3,29 @@ package internal
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"ticTacSolved/task/game/service"
 	"ticTacSolved/task/pkg/api"
 )
 
 func NewRouter(games service.GameService, tokens Tokens) http.Handler {
+	gin.SetMode(gin.ReleaseMode)
+
 	h := &handlers{games: games, tokens: tokens}
-	requireSession := RequireSession(tokens)
-	session := func(handler http.HandlerFunc) http.Handler {
-		return Chain(handler, requireSession)
-	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST "+api.PathLogin, h.login)
-	mux.HandleFunc("POST "+api.PathRefresh, h.refresh)
+	router := gin.New()
+	router.Use(Logging(), ErrorHandler())
 
-	mux.Handle("GET "+api.PathGames, session(h.listGames))
-	mux.Handle("POST "+api.PathGames, session(h.createGame))
-	mux.Handle("GET "+api.PathGames+"/{id}", session(h.getGame))
-	mux.Handle("POST "+api.PathGames+"/{id}/join", session(h.joinGame))
-	mux.Handle("POST "+api.PathGames+"/{id}/move", session(h.moveGame))
+	router.POST(api.PathLogin, h.login)
+	router.POST(api.PathRefresh, h.refresh)
 
-	return Chain(mux, Recover, Logging)
+	authed := router.Group("", RequireSession(tokens))
+	authed.GET(api.PathGames, h.listGames)
+	authed.POST(api.PathGames, h.createGame)
+	authed.GET(api.PathGames+"/:id", h.getGame)
+	authed.POST(api.PathGames+"/:id/join", h.joinGame)
+	authed.POST(api.PathGames+"/:id/move", h.moveGame)
+
+	return router
 }

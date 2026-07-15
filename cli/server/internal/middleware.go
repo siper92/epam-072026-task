@@ -1,87 +1,81 @@
 package internal
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"ticTacSolved/task/pkg/api"
 	"ticTacSolved/task/pkg/errs"
 )
 
-type Middleware func(http.Handler) http.Handler
+const playerIDKey = "playerID"
 
-func Chain(handler http.Handler, mws ...Middleware) http.Handler {
-	for i := len(mws) - 1; i >= 0; i-- {
-		handler = mws[i](handler)
-	}
-	return handler
+func PlayerID(c *gin.Context) string {
+	return c.GetString(playerIDKey)
 }
 
-type ctxKey int
-
-const playerIDKey ctxKey = iota
-
-func PlayerID(ctx context.Context) string {
-	id, _ := ctx.Value(playerIDKey).(string)
-	return id
-}
-
-func Recover(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if rec := recover(); rec != nil {
-				log.Printf("panic on %s %s: %v", r.Method, r.URL.Path, rec)
-				writeJSON(w, http.StatusInternalServerError, api.ErrorResponse{
-					Code:    codeInternal,
-					Message: "internal server error",
-				})
-			}
-		}()
-		next.ServeHTTP(w, r)
-	})
-}
-
-type statusRecorder struct {
-	http.ResponseWriter
-	status int
-}
-
-func (r *statusRecorder) WriteHeader(status int) {
-	r.status = status
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func Logging(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+func Logging() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		start := time.Now()
-		next.ServeHTTP(rec, r)
+		c.Next()
 		log.Printf(
 			"%s %s %d %s",
-			r.Method, r.URL.Path, rec.status, time.Since(start),
+			c.Request.Method,
+			c.Request.URL.Path,
+			c.Writer.Status(),
+			time.Since(start),
 		)
-	})
+	}
 }
 
-func RequireSession(sessions SessionValidator) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token, err := bearerToken(r)
-			if err != nil {
-				writeErr(w, err)
-				return
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Printf(
+					"panic on %s %s: %v",
+					c.Request.Method,
+					c.Request.URL.Path,
+					rec,
+				)
+				c.AbortWithStatusJSON(
+					http.StatusInternalServerError,
+					api.ErrorResponse{
+						Code:    codeInternal,
+						Message: "internal server error",
+					},
+				)
 			}
-			playerID, err := sessions.ValidateSession(r.Context(), token)
-			if err != nil {
-				writeErr(w, err)
-				return
-			}
-			ctx := context.WithValue(r.Context(), playerIDKey, playerID)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
+		}()
+
+		c.Next()
+
+		if err := c.Errors.Last(); err != nil {
+			writeErr(c, err.Err)
+		}
+	}
+}
+
+func RequireSession(sessions SessionValidator) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, err := bearerToken(c.Request)
+		if err != nil {
+			c.Abort()
+			_ = c.Error(err)
+			return
+		}
+		playerID, err := sessions.ValidateSession(c.Request.Context(), token)
+		if err != nil {
+			c.Abort()
+			_ = c.Error(err)
+			return
+		}
+		c.Set(playerIDKey, playerID)
+		c.Next()
 	}
 }
 

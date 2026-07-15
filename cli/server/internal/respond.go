@@ -1,10 +1,10 @@
 package internal
 
 import (
-	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 
 	"ticTacSolved/task/pkg/api"
 	"ticTacSolved/task/pkg/errs"
@@ -24,15 +24,7 @@ var statusByCode = map[errs.Code]int{
 	errs.CodeOutOfTurn:         http.StatusConflict,
 }
 
-func writeJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		log.Printf("failed to encode response: %v", err)
-	}
-}
-
-func writeErr(w http.ResponseWriter, err error) {
+func writeErr(c *gin.Context, err error) {
 	code := errs.CodeOf(err)
 	status, known := statusByCode[code]
 	if !known {
@@ -48,7 +40,7 @@ func writeErr(w http.ResponseWriter, err error) {
 		message = typed.Message
 	}
 
-	writeJSON(w, status, api.ErrorResponse{
+	c.JSON(status, api.ErrorResponse{
 		Code:    string(code),
 		Message: message,
 	})

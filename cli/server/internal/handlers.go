@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
 	"ticTacSolved/task/game/data/gen"
 	"ticTacSolved/task/game/service"
 	"ticTacSolved/task/pkg/api"
@@ -17,60 +19,61 @@ type handlers struct {
 	tokens Tokens
 }
 
-func (h *handlers) login(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) login(c *gin.Context) {
 	var req api.LoginRequest
-	if err := decodeBody(r, &req); err != nil {
-		writeErr(w, err)
+	if err := decodeBody(c, &req); err != nil {
+		_ = c.Error(err)
 		return
 	}
 
 	result, err := h.tokens.Login(
-		r.Context(),
+		c.Request.Context(),
 		req.User,
 		req.Password,
 		req.SessionTTLSeconds,
 		req.RefreshTTLSeconds,
 	)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, api.LoginResponse{
+	c.JSON(http.StatusOK, api.LoginResponse{
 		PlayerID: result.PlayerID,
 		Session:  result.Session,
 		Refresh:  result.Refresh,
 	})
 }
 
-func (h *handlers) refresh(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) refresh(c *gin.Context) {
 	var req api.RefreshRequest
-	if err := decodeBody(r, &req); err != nil {
-		writeErr(w, err)
+	if err := decodeBody(c, &req); err != nil {
+		_ = c.Error(err)
 		return
 	}
+
 	if req.RefreshToken == "" {
-		writeErr(w, errs.New(errs.CodeInvalidInput, "refresh token is required"))
+		_ = c.Error(errs.New(errs.CodeInvalidInput, "refresh token is required"))
 		return
 	}
 
 	session, err := h.tokens.Refresh(
-		r.Context(),
+		c.Request.Context(),
 		req.RefreshToken,
 		req.SessionTTLSeconds,
 	)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, api.RefreshResponse{Session: session})
+	c.JSON(http.StatusOK, api.RefreshResponse{Session: session})
 }
 
-func (h *handlers) listGames(w http.ResponseWriter, r *http.Request) {
-	games, err := h.games.WaitingGames(r.Context())
+func (h *handlers) listGames(c *gin.Context) {
+	games, err := h.games.WaitingGames(c.Request.Context())
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -79,81 +82,81 @@ func (h *handlers) listGames(w http.ResponseWriter, r *http.Request) {
 		resp.Games = append(resp.Games, toGameResponse(game, "", false))
 	}
 
-	writeJSON(w, http.StatusOK, resp)
+	c.JSON(http.StatusOK, resp)
 }
 
-func (h *handlers) createGame(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) createGame(c *gin.Context) {
 	var req api.CreateGameRequest
-	if err := decodeBody(r, &req); err != nil {
-		writeErr(w, err)
+	if err := decodeBody(c, &req); err != nil {
+		_ = c.Error(err)
 		return
 	}
 
 	game, token, err := h.games.CreateGame(
-		r.Context(),
-		PlayerID(r.Context()),
+		c.Request.Context(),
+		PlayerID(c),
 		req.Public,
 	)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toGameResponse(game, token, true))
+	c.JSON(http.StatusCreated, toGameResponse(game, token, true))
 }
 
-func (h *handlers) getGame(w http.ResponseWriter, r *http.Request) {
-	game, err := h.games.GetGame(r.Context(), r.PathValue("id"))
+func (h *handlers) getGame(c *gin.Context) {
+	game, err := h.games.GetGame(c.Request.Context(), c.Param("id"))
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toGameResponse(game, "", false))
+	c.JSON(http.StatusOK, toGameResponse(game, "", false))
 }
 
-func (h *handlers) joinGame(w http.ResponseWriter, r *http.Request) {
+func (h *handlers) joinGame(c *gin.Context) {
 	var req api.JoinGameRequest
-	if err := decodeBody(r, &req); err != nil {
-		writeErr(w, err)
+	if err := decodeBody(c, &req); err != nil {
+		_ = c.Error(err)
 		return
 	}
 
 	game, token, err := h.games.JoinGame(
-		r.Context(),
-		r.PathValue("id"),
-		PlayerID(r.Context()),
+		c.Request.Context(),
+		c.Param("id"),
+		PlayerID(c),
 		req.Code,
 	)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toGameResponse(game, token, false))
+	c.JSON(http.StatusOK, toGameResponse(game, token, false))
 }
 
-func (h *handlers) moveGame(w http.ResponseWriter, r *http.Request) {
-	gameToken := r.Header.Get(api.HeaderGameToken)
+func (h *handlers) moveGame(c *gin.Context) {
+	gameToken := c.GetHeader(api.HeaderGameToken)
 	if gameToken == "" {
-		writeErr(w, errs.New(errs.CodeInvalidToken, "missing game token"))
+		_ = c.Error(errs.New(errs.CodeInvalidToken, "missing game token"))
 		return
 	}
 
-	claims, err := h.games.ValidateGameToken(r.Context(), gameToken)
+	claims, err := h.games.ValidateGameToken(c.Request.Context(), gameToken)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
-	if claims.GameID != r.PathValue("id") {
-		writeErr(w, errs.New(
+	if claims.GameID != c.Param("id") {
+		_ = c.Error(errs.New(
 			errs.CodeInvalidToken,
 			"game token does not match the game",
 		))
 		return
 	}
-	if claims.PlayerID != PlayerID(r.Context()) {
-		writeErr(w, errs.New(
+	if claims.PlayerID != PlayerID(c) {
+		_ = c.Error(errs.New(
 			errs.CodeInvalidToken,
 			"game token does not belong to the player",
 		))
@@ -161,22 +164,22 @@ func (h *handlers) moveGame(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req api.MoveRequest
-	if err = decodeBody(r, &req); err != nil {
-		writeErr(w, err)
+	if err = decodeBody(c, &req); err != nil {
+		_ = c.Error(err)
 		return
 	}
 
-	game, err := h.games.MakeMove(r.Context(), gameToken, req.Row, req.Col)
+	game, err := h.games.MakeMove(c.Request.Context(), gameToken, req.Row, req.Col)
 	if err != nil {
-		writeErr(w, err)
+		_ = c.Error(err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toGameResponse(game, "", false))
+	c.JSON(http.StatusOK, toGameResponse(game, "", false))
 }
 
-func decodeBody[T any](r *http.Request, dst *T) error {
-	err := json.NewDecoder(r.Body).Decode(dst)
+func decodeBody[T any](c *gin.Context, dst *T) error {
+	err := json.NewDecoder(c.Request.Body).Decode(dst)
 	if err == nil || errors.Is(err, io.EOF) {
 		return nil
 	}
