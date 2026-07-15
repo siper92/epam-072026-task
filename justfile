@@ -1,6 +1,7 @@
 image := "ttt-dev"
 build-image := "ttt-build-image"
 prod-image := "ttt-server-image"
+test-image := "ttt-test-image"
 
 default:
     @just --list
@@ -11,7 +12,17 @@ build:
 compile:
     docker run --rm -v {{justfile_directory()}}:/app -w /app/game/data {{image}} sqlc generate
 
-test:
+build-test:
+    docker build -t {{test-image}} -f _env/test/Dockerfile _env
+
+test: build-test
+    docker run --rm \
+        -v {{justfile_directory()}}:/app \
+        -v ttt-test-go-cache:/go \
+        -e JWT_SECRET=${JWT_SECRET:-test-secret} \
+        {{test-image}}
+
+test-unit:
     go test ./...
 
 run:
