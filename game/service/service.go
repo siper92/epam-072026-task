@@ -30,22 +30,45 @@ type GamePlay interface {
 	MakeMove(ctx context.Context, token string, row int, col int) (gen.Game, error)
 }
 
+type Stats interface {
+	Leaders(ctx context.Context, limit int64) ([]gen.Stat, error)
+}
+
+type Watcher interface {
+	Watch(ctx context.Context, gameID string) (<-chan gen.Game, func(), error)
+}
+
 type GameService interface {
 	Lobby
 	GamePlay
 	Validator
+	Stats
+	Watcher
 }
 
 type gameService struct {
 	games  data.GameStore
 	lobby  data.LobbyStore
+	stats  data.StatsStore
 	tokens auth.Service
+	watch  *broadcaster
 }
 
 var _ GameService = (*gameService)(nil)
 
-func NewGameService(games data.GameStore, lobby data.LobbyStore, tokens auth.Service) GameService {
-	return &gameService{games: games, lobby: lobby, tokens: tokens}
+func NewGameService(
+	games data.GameStore,
+	lobby data.LobbyStore,
+	stats data.StatsStore,
+	tokens auth.Service,
+) GameService {
+	return &gameService{
+		games:  games,
+		lobby:  lobby,
+		stats:  stats,
+		tokens: tokens,
+		watch:  newBroadcaster(),
+	}
 }
 
 func (s *gameService) CreateGame(ctx context.Context, playerID string, public bool) (gen.Game, string, error) {
@@ -102,6 +125,7 @@ func (s *gameService) JoinGame(ctx context.Context, gameID string, playerID stri
 	if err != nil {
 		return gen.Game{}, "", err
 	}
+	s.watch.publish(game)
 	return game, token, nil
 }
 
@@ -137,7 +161,7 @@ func (s *gameService) MakeMove(ctx context.Context, token string, row int, col i
 
 	state := machine.GetCurrentState()
 	if state.CurrentPlayer != "" && state.CurrentPlayer != gameToken.Mark {
-		return gen.Game{}, errs.Newf(errs.CodeInvalidTransition, "it is not player %q turn", gameToken.Mark)
+		return gen.Game{}, errs.Newf(errs.CodeOutOfTurn, "it is not player %q turn", gameToken.Mark)
 	}
 
 	if err = machine.ProcessMove(row, col); err != nil {
@@ -150,8 +174,42 @@ func (s *gameService) MakeMove(ctx context.Context, token string, row int, col i
 	if err = s.games.UpdateGameState(ctx, game.ID, game.Board, game.Status); err != nil {
 		return gen.Game{}, err
 	}
+	if err = s.recordFinish(ctx, game); err != nil {
+		return gen.Game{}, err
+	}
+	s.watch.publish(game)
 
 	return game, nil
+}
+
+func (s *gameService) Watch(
+	ctx context.Context,
+	gameID string,
+) (<-chan gen.Game, func(), error) {
+	if _, err := s.games.GetGame(ctx, gameID); err != nil {
+		return nil, nil, err
+	}
+	updates, cancel := s.watch.subscribe(gameID)
+	return updates, cancel, nil
+}
+
+func (s *gameService) Leaders(ctx context.Context, limit int64) ([]gen.Stat, error) {
+	if limit <= 0 {
+		limit = 10
+	}
+	return s.stats.ListLeaders(ctx, limit)
+}
+
+func (s *gameService) recordFinish(ctx context.Context, game gen.Game) error {
+	switch state_machine.GameStatus(game.Status) {
+	case state_machine.StatusGameOverPlayerXWin:
+		return s.stats.RecordResult(ctx, game.PlayerX, game.PlayerO, false)
+	case state_machine.StatusGameOverPlayerOWin:
+		return s.stats.RecordResult(ctx, game.PlayerO, game.PlayerX, false)
+	case state_machine.StatusGameOverDraw:
+		return s.stats.RecordResult(ctx, game.PlayerX, game.PlayerO, true)
+	}
+	return nil
 }
 
 func (s *gameService) issueGameToken(ctx context.Context, game gen.Game, playerID string, mark string) (string, error) {

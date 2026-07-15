@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func refreshCommand(newClient ClientFactory) *cobra.Command {
+func refreshCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "refresh",
 		Short: "get a new session token using the stored refresh token",
@@ -20,7 +20,7 @@ func refreshCommand(newClient ClientFactory) *cobra.Command {
 				return err
 			}
 
-			cmd.Printf("session refreshed, valid until %s\n", formatUnix(data.Session.ExpiresAt))
+			newPrinter().Refreshed(cmd, data)
 			return nil
 		},
 	}

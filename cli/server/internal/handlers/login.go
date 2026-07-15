@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,6 +27,12 @@ func (h *Handlers) Login(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
+
+	fmt.Sprintf("raw result: %v", api.LoginResponse{
+		PlayerID: result.PlayerID,
+		Session:  result.Session,
+		Refresh:  result.Refresh,
+	})
 
 	c.JSON(http.StatusOK, api.LoginResponse{
 		PlayerID: result.PlayerID,

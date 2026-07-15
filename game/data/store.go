@@ -26,9 +26,15 @@ type TokenStore interface {
 	GetTokenExpiry(ctx context.Context, token string) (int64, error)
 }
 
+type StatsStore interface {
+	RecordResult(ctx context.Context, winnerID string, loserID string, draw bool) error
+	ListLeaders(ctx context.Context, limit int64) ([]gen.Stat, error)
+}
+
 type Store interface {
 	GameStore
 	PlayerStore
 	LobbyStore
 	TokenStore
+	StatsStore
 }

@@ -24,21 +24,35 @@ type Server struct {
 
 var _ Runner = (*Server)(nil)
 
-func NewServer(host string, port int) *Server {
-	store := data.NewMemoryStore()
-	authService := auth.NewService(store)
-	games := service.NewGameService(store, store, authService)
-	tokens := NewTokens(authService, store)
+type ServerConfig struct {
+	Host  string
+	Port  int
+	Store data.Store
+}
 
-	addr := fmt.Sprintf("%s:%d", host, port)
+func NewServer(cfg ServerConfig) *Server {
+	store := cfg.Store
+	if store == nil {
+		store = data.NewMemoryStore()
+	}
+
+	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
 	return &Server{
 		addr: addr,
 		http: &http.Server{
 			Addr:              addr,
-			Handler:           NewRouter(games, tokens),
+			Handler:           BuildHandler(store),
 			ReadHeaderTimeout: 5 * time.Second,
 		},
 	}
+}
+
+func BuildHandler(store data.Store) http.Handler {
+	authService := auth.NewService(store)
+	games := service.NewGameService(store, store, store, authService)
+	queue := service.NewQueueService(games)
+	tokens := NewTokens(authService, store)
+	return NewRouter(games, queue, tokens)
 }
 
 func (s *Server) Addr() string {

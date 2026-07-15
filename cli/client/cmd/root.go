@@ -20,7 +20,8 @@ var rootCmd = &cobra.Command{
 	Long: "tic tac toe game client\n\n" +
 		"type file runs one shot action commands and stores tokens on disk,\n" +
 		"type cli starts an interactive play loop with the same token storage",
-	SilenceUsage: true,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
 		return loadDotEnv()
 	},
@@ -28,7 +29,15 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() error {
-	return rootCmd.Execute()
+	err := rootCmd.Execute()
+	if err != nil {
+		internal.PrintError(
+			rootCmd.ErrOrStderr(),
+			cfg.GetString(internal.KeyOutput),
+			err,
+		)
+	}
+	return err
 }
 
 func init() {
@@ -45,6 +54,8 @@ func init() {
 		internal.DefaultSessionFile(),
 		"path of the stored session data",
 	)
+	flags.String(internal.KeyOutput, internal.OutputHuman, "output mode: human or json")
+	flags.String(internal.KeyGameToken, "", "game token used for move, overrides the stored one")
 
 	cfg.SetEnvPrefix("TTT")
 	cfg.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -59,12 +70,14 @@ func init() {
 		internal.KeyTokenTTL,
 		internal.KeySessionTTL,
 		internal.KeySessionFile,
+		internal.KeyOutput,
+		internal.KeyGameToken,
 	}
 	for _, key := range keys {
 		mustBindFlag(key)
 	}
 
-	rootCmd.AddCommand(actions.Command(newClient))
+	rootCmd.AddCommand(actions.Command(newClient, newPrinter))
 }
 
 func mustBindFlag(key string) {
@@ -112,4 +125,8 @@ func newClient() (internal.GameClient, error) {
 	}
 
 	return internal.NewClient(conf, internal.NewSessionStore(conf)), nil
+}
+
+func newPrinter() internal.Printer {
+	return internal.NewPrinter(cfg.GetString(internal.KeyOutput))
 }

@@ -43,6 +43,22 @@ func RenderBoard(board string) string {
 	return b.String()
 }
 
+func RenderLeaders(leaders []LeaderEntry) string {
+	if len(leaders) == 0 {
+		return "no results recorded yet\n"
+	}
+
+	var b strings.Builder
+	for i, leader := range leaders {
+		fmt.Fprintf(
+			&b,
+			"%d. %s  wins=%d losses=%d draws=%d\n",
+			i+1, leader.PlayerID, leader.Wins, leader.Losses, leader.Draws,
+		)
+	}
+	return b.String()
+}
+
 func RenderGames(games []api.GameResponse) string {
 	if len(games) == 0 {
 		return "no games waiting for players\n"

@@ -2,11 +2,9 @@ package actions
 
 import (
 	"github.com/spf13/cobra"
-
-	"ticTacSolved/task/cli/client/internal"
 )
 
-func joinCommand(newClient ClientFactory) *cobra.Command {
+func joinCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "join <game-id>",
 		Short: "join a game and store its game token",
@@ -24,7 +22,7 @@ func joinCommand(newClient ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmd.Print(internal.RenderGame(game))
+			newPrinter().Joined(cmd, game)
 			return nil
 		},
 	}

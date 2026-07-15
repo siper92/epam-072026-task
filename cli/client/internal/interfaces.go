@@ -17,17 +17,24 @@ type Lobby interface {
 	WaitingGames(ctx context.Context) ([]api.GameResponse, error)
 	CreateGame(ctx context.Context, public bool) (api.GameResponse, error)
 	JoinGame(ctx context.Context, id string, code string) (api.GameResponse, error)
+	QueueJoin(ctx context.Context) (api.GameResponse, error)
 }
 
 type GamePlay interface {
 	GetGame(ctx context.Context, id string) (api.GameResponse, error)
 	Move(ctx context.Context, id string, row int, col int) (api.GameResponse, error)
+	Watch(ctx context.Context, id string) (<-chan api.GameResponse, error)
+}
+
+type Standings interface {
+	Leaderboard(ctx context.Context, limit int64) ([]LeaderEntry, error)
 }
 
 type GameClient interface {
 	SessionAuth
 	Lobby
 	GamePlay
+	Standings
 }
 
 var _ GameClient = (*Client)(nil)

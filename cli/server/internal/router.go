@@ -10,10 +10,19 @@ import (
 	"ticTacSolved/task/pkg/api"
 )
 
-func NewRouter(games service.GameService, tokens Tokens) http.Handler {
+const (
+	PathQueue       = "/api/queue"
+	PathLeaderboard = "/api/leaderboard"
+)
+
+func NewRouter(
+	games service.GameService,
+	queue service.QueueService,
+	tokens Tokens,
+) http.Handler {
 	gin.SetMode(gin.ReleaseMode)
 
-	h := handlers.New(games, tokens)
+	h := handlers.New(games, tokens, queue)
 
 	router := gin.New()
 	router.Use(Logging(), ErrorHandler())
@@ -27,6 +36,9 @@ func NewRouter(games service.GameService, tokens Tokens) http.Handler {
 	authed.GET(api.PathGames+"/:id", h.GetGame)
 	authed.POST(api.PathGames+"/:id/join", h.JoinGame)
 	authed.POST(api.PathGames+"/:id/move", h.MoveGame)
+	authed.GET(api.PathGames+"/:id/watch", h.WatchGame)
+	authed.POST(PathQueue, h.QueueJoin)
+	authed.GET(PathLeaderboard, h.Leaderboard)
 
 	return router
 }

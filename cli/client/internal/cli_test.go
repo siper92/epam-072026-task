@@ -14,12 +14,13 @@ import (
 )
 
 type fakeGameClient struct {
-	data  session.Data
-	games []api.GameResponse
-	game  api.GameResponse
-	err   error
-	calls []string
-	ids   []string
+	data    session.Data
+	games   []api.GameResponse
+	game    api.GameResponse
+	leaders []LeaderEntry
+	err     error
+	calls   []string
+	ids     []string
 }
 
 var _ GameClient = (*fakeGameClient)(nil)
@@ -51,6 +52,34 @@ func (f *fakeGameClient) CreateGame(
 	game := f.game
 	game.IsPublic = public
 	return game, f.err
+}
+
+func (f *fakeGameClient) QueueJoin(context.Context) (api.GameResponse, error) {
+	f.calls = append(f.calls, "queue")
+	return f.game, f.err
+}
+
+func (f *fakeGameClient) Leaderboard(
+	context.Context,
+	int64,
+) ([]LeaderEntry, error) {
+	f.calls = append(f.calls, "leaders")
+	return f.leaders, f.err
+}
+
+func (f *fakeGameClient) Watch(
+	_ context.Context,
+	id string,
+) (<-chan api.GameResponse, error) {
+	f.calls = append(f.calls, "watch")
+	f.ids = append(f.ids, id)
+	if f.err != nil {
+		return nil, f.err
+	}
+	updates := make(chan api.GameResponse, 1)
+	updates <- f.game
+	close(updates)
+	return updates, nil
 }
 
 func (f *fakeGameClient) JoinGame(
@@ -134,6 +163,13 @@ func TestRunInteractiveAction(t *testing.T) {
 			wantCurrent: "g2",
 		},
 		{
+			name:        "queue sets the current game",
+			command:     "queue",
+			fake:        &fakeGameClient{game: api.GameResponse{ID: "g-q"}},
+			wantCalls:   []string{"queue"},
+			wantCurrent: "g-q",
+		},
+		{
 			name:    "show without a current game",
 			command: "show",
 			fake:    &fakeGameClient{},
@@ -148,11 +184,20 @@ func TestRunInteractiveAction(t *testing.T) {
 			wantCurrent: "g3",
 		},
 		{
-			name:    "move requires row and col",
+			name:    "move rejects a single numeric arg",
 			command: "move",
 			args:    []string{"1"},
 			fake:    &fakeGameClient{},
-			wantErr: errs.CodeInvalidInput,
+			wantErr: errs.CodeOutOfBounds,
+		},
+		{
+			name:        "move accepts a cell name",
+			command:     "move",
+			args:        []string{"b2"},
+			current:     "g4",
+			fake:        &fakeGameClient{game: api.GameResponse{ID: "g4"}},
+			wantCalls:   []string{"move"},
+			wantCurrent: "g4",
 		},
 		{
 			name:    "move rejects a malformed cell",
@@ -169,6 +214,24 @@ func TestRunInteractiveAction(t *testing.T) {
 			fake:        &fakeGameClient{game: api.GameResponse{ID: "g4"}},
 			wantCalls:   []string{"move"},
 			wantCurrent: "g4",
+		},
+		{
+			name:    "watch streams until the game finishes",
+			command: "watch",
+			current: "g5",
+			fake: &fakeGameClient{game: api.GameResponse{
+				ID:     "g5",
+				Status: "GAME_OVER_PlayerX_WIN",
+			}},
+			wantCalls:   []string{"watch"},
+			wantCurrent: "g5",
+			wantOutput:  "GAME_OVER_PlayerX_WIN",
+		},
+		{
+			name:    "watch requires a game",
+			command: "watch",
+			fake:    &fakeGameClient{},
+			wantErr: errs.CodeInvalidInput,
 		},
 		{
 			name:    "unknown command",

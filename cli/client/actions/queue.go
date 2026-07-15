@@ -4,23 +4,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func loginCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
+func queueCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	return &cobra.Command{
-		Use:   "login",
-		Short: "login with user and password and store fresh tokens",
+		Use:   "queue",
+		Short: "join the matchmaking queue, pairs with the next waiting player",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			c, err := newClient()
 			if err != nil {
 				return err
 			}
-
-			data, err := c.Login(cmd.Context())
+			game, err := c.QueueJoin(cmd.Context())
 			if err != nil {
 				return err
 			}
-
-			newPrinter().Login(cmd, data)
+			newPrinter().Joined(cmd, game)
 			return nil
 		},
 	}

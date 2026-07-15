@@ -3,11 +3,10 @@ package actions
 import (
 	"github.com/spf13/cobra"
 
-	"ticTacSolved/task/cli/client/internal"
 	"ticTacSolved/task/pkg/errs"
 )
 
-func showCommand(newClient ClientFactory) *cobra.Command {
+func showCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "show [game-id]",
 		Short: "show a game, defaults to the stored current game",
@@ -34,7 +33,7 @@ func showCommand(newClient ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmd.Print(internal.RenderGame(game))
+			newPrinter().Game(cmd, game)
 			return nil
 		},
 	}

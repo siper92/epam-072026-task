@@ -16,6 +16,11 @@ const (
 )
 
 const (
+	OutputHuman = "human"
+	OutputJSON  = "json"
+)
+
+const (
 	KeyServer      = "server"
 	KeyUser        = "user"
 	KeyPassword    = "password"
@@ -24,6 +29,8 @@ const (
 	KeyTokenTTL    = "token-ttl"
 	KeySessionTTL  = "session-ttl"
 	KeySessionFile = "session-file"
+	KeyOutput      = "output"
+	KeyGameToken   = "game-token"
 )
 
 type Config struct {
@@ -35,6 +42,8 @@ type Config struct {
 	TokenTTL    int64
 	SessionTTL  int64
 	SessionFile string
+	Output      string
+	GameToken   string
 }
 
 func NewConfig(v *viper.Viper) (Config, error) {
@@ -47,12 +56,24 @@ func NewConfig(v *viper.Viper) (Config, error) {
 		TokenTTL:    v.GetInt64(KeyTokenTTL),
 		SessionTTL:  v.GetInt64(KeySessionTTL),
 		SessionFile: v.GetString(KeySessionFile),
+		Output:      v.GetString(KeyOutput),
+		GameToken:   v.GetString(KeyGameToken),
 	}
 	if conf.Type != TypeCLI && conf.Type != TypeFile {
 		return Config{}, errs.Newf(
 			errs.CodeInvalidInput,
 			"invalid client type %q, expected cli or file",
 			conf.Type,
+		)
+	}
+	if conf.Output == "" {
+		conf.Output = OutputHuman
+	}
+	if conf.Output != OutputHuman && conf.Output != OutputJSON {
+		return Config{}, errs.Newf(
+			errs.CodeInvalidInput,
+			"invalid output %q, expected human or json",
+			conf.Output,
 		)
 	}
 	if conf.ServerURL == "" {

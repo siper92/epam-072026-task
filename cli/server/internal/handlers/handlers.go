@@ -31,8 +31,13 @@ type Authenticator interface {
 type Handlers struct {
 	games service.GameService
 	auth  Authenticator
+	queue service.QueueService
 }
 
-func New(games service.GameService, auth Authenticator) *Handlers {
-	return &Handlers{games: games, auth: auth}
+func New(
+	games service.GameService,
+	auth Authenticator,
+	queue service.QueueService,
+) *Handlers {
+	return &Handlers{games: games, auth: auth, queue: queue}
 }

@@ -13,6 +13,13 @@ CREATE TABLE games (
     player_o TEXT NOT NULL
 );
 
+CREATE TABLE stats (
+    player_id TEXT PRIMARY KEY,
+    wins INTEGER NOT NULL DEFAULT 0,
+    losses INTEGER NOT NULL DEFAULT 0,
+    draws INTEGER NOT NULL DEFAULT 0
+);
+
 CREATE TABLE tokens (
     token TEXT PRIMARY KEY,
     player_id TEXT NOT NULL,

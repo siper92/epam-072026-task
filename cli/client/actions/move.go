@@ -3,28 +3,20 @@ package actions
 import (
 	"github.com/spf13/cobra"
 
-	"ticTacSolved/task/cli/client/internal"
 	"ticTacSolved/task/game/utils"
 )
 
-func moveCommand(newClient ClientFactory) *cobra.Command {
+func moveCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	return &cobra.Command{
-		Use:   "move [game-id] <row> <col>",
-		Short: "make a move, game id defaults to the stored current game",
+		Use:   "move <game-id> <cell>",
+		Short: "make a move, cell is a1..c3, also accepts [game-id] <row> <col>",
 		Args:  cobra.RangeArgs(2, 3),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			c, err := newClient()
 			if err != nil {
 				return err
 			}
-			id := ""
-			cellArgs := args
-			if len(args) == 3 {
-				id = args[0]
-				cellArgs = args[1:]
-			}
-
-			row, col, err := utils.ParseCell(cellArgs[0], cellArgs[1])
+			id, row, col, err := parseMoveArgs(args)
 			if err != nil {
 				return err
 			}
@@ -32,8 +24,21 @@ func moveCommand(newClient ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmd.Print(internal.RenderGame(game))
+			newPrinter().Game(cmd, game)
 			return nil
 		},
 	}
+}
+
+func parseMoveArgs(args []string) (string, int, int, error) {
+	if len(args) == 3 {
+		row, col, err := utils.ParseCell(args[1], args[2])
+		return args[0], row, col, err
+	}
+	if utils.IsCellName(args[1]) {
+		row, col, err := utils.ParseCellName(args[1])
+		return args[0], row, col, err
+	}
+	row, col, err := utils.ParseCell(args[0], args[1])
+	return "", row, col, err
 }

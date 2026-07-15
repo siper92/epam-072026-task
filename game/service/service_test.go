@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 
 func newTestService() GameService {
 	store := data.NewMemoryStore()
-	return NewGameService(store, store, auth.NewService(store))
+	return NewGameService(store, store, store, auth.NewService(store))
 }
 
 func TestCreatePublicGameListedInLobby(t *testing.T) {
@@ -150,8 +150,8 @@ func TestMakeMoveFlow(t *testing.T) {
 		t.Fatalf("JoinGame: %v", err)
 	}
 
-	if _, err = svc.MakeMove(ctx, tokenO, 0, 0); !errs.HasCode(err, errs.CodeInvalidTransition) {
-		t.Fatalf("expected CodeInvalidTransition when moving out of turn, got %v", err)
+	if _, err = svc.MakeMove(ctx, tokenO, 0, 0); !errs.HasCode(err, errs.CodeOutOfTurn) {
+		t.Fatalf("expected CodeOutOfTurn when moving out of turn, got %v", err)
 	}
 	if _, err = svc.MakeMove(ctx, "not-a-token", 0, 0); !errs.HasCode(err, errs.CodeInvalidToken) {
 		t.Fatalf("expected CodeInvalidToken, got %v", err)

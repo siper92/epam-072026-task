@@ -1,8 +1,6 @@
 package actions
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
 
 	"ticTacSolved/task/cli/client/internal"
@@ -10,25 +8,26 @@ import (
 
 type ClientFactory func() (internal.GameClient, error)
 
-func Command(newClient ClientFactory) *cobra.Command {
+type PrinterFactory func() internal.Printer
+
+func Command(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "action",
 		Short: "perform a single client action against the server",
 	}
 
 	cmd.AddCommand(
-		loginCommand(newClient),
-		refreshCommand(newClient),
-		listCommand(newClient),
-		createCommand(newClient),
-		joinCommand(newClient),
-		showCommand(newClient),
-		moveCommand(newClient),
+		loginCommand(newClient, newPrinter),
+		refreshCommand(newClient, newPrinter),
+		listCommand(newClient, newPrinter),
+		createCommand(newClient, newPrinter),
+		joinCommand(newClient, newPrinter),
+		queueCommand(newClient, newPrinter),
+		leaderboardCommand(newClient, newPrinter),
+		showCommand(newClient, newPrinter),
+		stateCommand(newClient, newPrinter),
+		moveCommand(newClient, newPrinter),
 	)
 
 	return cmd
-}
-
-func formatUnix(unix int64) string {
-	return time.Unix(unix, 0).Format(time.RFC3339)
 }

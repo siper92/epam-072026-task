@@ -1,11 +1,13 @@
 package internal
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -14,10 +16,27 @@ import (
 	"ticTacSolved/task/pkg/session"
 )
 
+const (
+	pathQueue       = "/api/queue"
+	pathLeaderboard = "/api/leaderboard"
+)
+
+type LeaderEntry struct {
+	PlayerID string `json:"player_id"`
+	Wins     int64  `json:"wins"`
+	Losses   int64  `json:"losses"`
+	Draws    int64  `json:"draws"`
+}
+
+type leaderboardResponse struct {
+	Leaders []LeaderEntry `json:"leaders"`
+}
+
 type Client struct {
 	cfg     Config
 	baseURL string
 	http    *http.Client
+	stream  *http.Client
 	tokens  *TokenManager
 }
 
@@ -26,6 +45,7 @@ func NewClient(cfg Config, store session.Store) *Client {
 		cfg:     cfg,
 		baseURL: strings.TrimRight(cfg.ServerURL, "/"),
 		http:    &http.Client{Timeout: 30 * time.Second},
+		stream:  &http.Client{},
 	}
 	c.tokens = NewTokenManager(cfg, store, c)
 	return c
@@ -97,6 +117,23 @@ func (c *Client) JoinGame(
 	return game, nil
 }
 
+func (c *Client) QueueJoin(ctx context.Context) (api.GameResponse, error) {
+	token, err := c.tokens.SessionToken(ctx)
+	if err != nil {
+		return api.GameResponse{}, err
+	}
+
+	var game api.GameResponse
+	err = c.doJSON(ctx, http.MethodPost, pathQueue, token, "", nil, &game)
+	if err != nil {
+		return api.GameResponse{}, err
+	}
+	if err = c.tokens.SaveGame(game.ID, game.GameToken); err != nil {
+		return api.GameResponse{}, err
+	}
+	return game, nil
+}
+
 func (c *Client) GetGame(ctx context.Context, id string) (api.GameResponse, error) {
 	token, err := c.tokens.SessionToken(ctx)
 	if err != nil {
@@ -134,6 +171,10 @@ func (c *Client) Move(
 			"game id is required, join or create a game first",
 		)
 	}
+	gameToken := c.cfg.GameToken
+	if gameToken == "" {
+		gameToken = data.GameToken
+	}
 
 	var game api.GameResponse
 	in := api.MoveRequest{Row: row, Col: col}
@@ -142,7 +183,7 @@ func (c *Client) Move(
 		http.MethodPost,
 		api.MovePath(id),
 		token,
-		data.GameToken,
+		gameToken,
 		in,
 		&game,
 	)
@@ -150,6 +191,81 @@ func (c *Client) Move(
 		return api.GameResponse{}, err
 	}
 	return game, nil
+}
+
+func (c *Client) Watch(
+	ctx context.Context,
+	id string,
+) (<-chan api.GameResponse, error) {
+	if id == "" {
+		return nil, errs.New(errs.CodeInvalidInput, "game id is required")
+	}
+	token, err := c.tokens.SessionToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(
+		ctx,
+		http.MethodGet,
+		c.baseURL+api.GamePath(id)+"/watch",
+		nil,
+	)
+	if err != nil {
+		return nil, errs.Wrap(errs.CodeInvalidInput, "failed to build request", err)
+	}
+	req.Header.Set(api.HeaderAuthorization, api.BearerPrefix+token)
+	req.Header.Set("Accept", "text/event-stream")
+
+	resp, err := c.stream.Do(req)
+	if err != nil {
+		return nil, errs.Wrap(errs.CodeInvalidAction, "request to server failed", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		return nil, decodeError(resp.StatusCode, raw)
+	}
+
+	updates := make(chan api.GameResponse)
+	go func() {
+		defer close(updates)
+		defer resp.Body.Close()
+		scanner := bufio.NewScanner(resp.Body)
+		for scanner.Scan() {
+			payload, found := strings.CutPrefix(scanner.Text(), "data: ")
+			if !found {
+				continue
+			}
+			var game api.GameResponse
+			if err := json.Unmarshal([]byte(payload), &game); err != nil {
+				return
+			}
+			select {
+			case updates <- game:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return updates, nil
+}
+
+func (c *Client) Leaderboard(ctx context.Context, limit int64) ([]LeaderEntry, error) {
+	token, err := c.tokens.SessionToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	path := pathLeaderboard
+	if limit > 0 {
+		path += "?limit=" + strconv.FormatInt(limit, 10)
+	}
+	var out leaderboardResponse
+	if err = c.doJSON(ctx, http.MethodGet, path, token, "", nil, &out); err != nil {
+		return nil, err
+	}
+	return out.Leaders, nil
 }
 
 func (c *Client) loginRequest(ctx context.Context) (api.LoginResponse, error) {

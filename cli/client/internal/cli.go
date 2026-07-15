@@ -20,8 +20,12 @@ const interactiveHelp = `commands:
   list                 show public games waiting for players
   create [private]     create a game and enter it
   join <id> [code]     join a game, code needed for private games
+  queue                join the matchmaking queue
+  leaders              show the leaderboard
   show                 show the current game
   move <row> <col>     make a move in the current game
+  move <cell>          make a move using a cell name a1..c3
+  watch [id]           stream updates for a game until it finishes
   help                 show this help
   quit                 exit
 `
@@ -147,6 +151,21 @@ func runInteractiveAction(
 		*current = game.ID
 		cmd.Print(RenderGame(game))
 		return nil
+	case "queue":
+		game, err := c.QueueJoin(ctx)
+		if err != nil {
+			return err
+		}
+		*current = game.ID
+		cmd.Print(RenderGame(game))
+		return nil
+	case "leaders":
+		leaders, err := c.Leaderboard(ctx, 0)
+		if err != nil {
+			return err
+		}
+		cmd.Print(RenderLeaders(leaders))
+		return nil
 	case "show":
 		id := *current
 		if len(args) > 0 {
@@ -162,10 +181,16 @@ func runInteractiveAction(
 		cmd.Print(RenderGame(game))
 		return nil
 	case "move":
-		if len(args) != 2 {
-			return errs.New(errs.CodeInvalidInput, "usage: move <row> <col>")
+		var row, col int
+		var err error
+		switch len(args) {
+		case 1:
+			row, col, err = utils.ParseCellName(args[0])
+		case 2:
+			row, col, err = utils.ParseCell(args[0], args[1])
+		default:
+			return errs.New(errs.CodeInvalidInput, "usage: move <cell> or move <row> <col>")
 		}
-		row, col, err := utils.ParseCell(args[0], args[1])
 		if err != nil {
 			return err
 		}
@@ -176,8 +201,73 @@ func runInteractiveAction(
 		*current = game.ID
 		cmd.Print(RenderGame(game))
 		return nil
+	case "watch":
+		id := *current
+		if len(args) > 0 {
+			id = args[0]
+		}
+		if id == "" {
+			return errs.New(errs.CodeInvalidInput, "no current game, join or create first")
+		}
+		return watchGame(ctx, cmd, c, id)
 	}
 	return errs.Newf(errs.CodeInvalidAction, "unknown command %q, type help", name)
+}
+
+func watchGame(
+	ctx context.Context,
+	cmd *cobra.Command,
+	c GameClient,
+	id string,
+) error {
+	updates, err := c.Watch(ctx, id)
+	if err != nil {
+		cmd.Println("watch stream unavailable, falling back to polling")
+		return pollGame(ctx, cmd, c, id)
+	}
+
+	finished := false
+	for game := range updates {
+		cmd.Print(RenderGame(game))
+		finished = viewStatus(game.Status) == StatusFinished
+		if finished {
+			break
+		}
+	}
+	if finished || ctx.Err() != nil {
+		return nil
+	}
+	return pollGame(ctx, cmd, c, id)
+}
+
+func pollGame(
+	ctx context.Context,
+	cmd *cobra.Command,
+	c GameClient,
+	id string,
+) error {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	last := ""
+	for {
+		game, err := c.GetGame(ctx, id)
+		if err != nil {
+			return err
+		}
+		if key := game.Board + game.Status; key != last {
+			last = key
+			cmd.Print(RenderGame(game))
+		}
+		if viewStatus(game.Status) == StatusFinished {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+		}
+	}
 }
 
 func currentGameID(c GameClient) string {

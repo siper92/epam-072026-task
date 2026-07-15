@@ -78,3 +78,25 @@ func (s *sqlStore) GetTokenExpiry(ctx context.Context, token string) (int64, err
 	}
 	return expiresAt, err
 }
+
+func (s *sqlStore) RecordResult(
+	ctx context.Context,
+	winnerID string,
+	loserID string,
+	draw bool,
+) error {
+	winner := gen.AddStatsParams{PlayerID: winnerID, Wins: 1}
+	loser := gen.AddStatsParams{PlayerID: loserID, Losses: 1}
+	if draw {
+		winner = gen.AddStatsParams{PlayerID: winnerID, Draws: 1}
+		loser = gen.AddStatsParams{PlayerID: loserID, Draws: 1}
+	}
+	if err := s.q.AddStats(ctx, winner); err != nil {
+		return err
+	}
+	return s.q.AddStats(ctx, loser)
+}
+
+func (s *sqlStore) ListLeaders(ctx context.Context, limit int64) ([]gen.Stat, error) {
+	return s.q.ListLeaders(ctx, limit)
+}

@@ -2,11 +2,9 @@ package actions
 
 import (
 	"github.com/spf13/cobra"
-
-	"ticTacSolved/task/cli/client/internal"
 )
 
-func listCommand(newClient ClientFactory) *cobra.Command {
+func listCommand(newClient ClientFactory, newPrinter PrinterFactory) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "list public games waiting for players",
@@ -20,7 +18,7 @@ func listCommand(newClient ClientFactory) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cmd.Print(internal.RenderGames(games))
+			newPrinter().Games(cmd, games)
 			return nil
 		},
 	}
